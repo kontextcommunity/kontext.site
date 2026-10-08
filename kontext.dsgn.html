@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>kontext.dsgn — Graphic Design</title>
+<style>
+@font-face { font-family: 'Steppe'; src: url('assets/fonts/Steppe-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+@font-face { font-family: 'Steppe'; src: url('assets/fonts/Steppe-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; }
+@font-face { font-family: 'Steppe'; src: url('assets/fonts/Steppe-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; }
+</style>
+<style>
+/* ─── RESET ─────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ─── TOKENS ─────────────────────────────────────── */
+:root{
+  --bg:#ffffff;
+  --ink:#000000;
+  --red:#C0152A;
+  --mid:#8a8a8a;
+  --line:#d8d8d8;
+  --f:'Steppe',sans-serif;
+  --mg:5vw;
+}
+
+/* ─── BASE ───────────────────────────────────────── */
+html{scroll-behavior:auto;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--f);font-weight:400;
+  font-size:15px;line-height:1.55;
+  overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+
+/* ─── SECTION BASE (for guide SVGs) ─────────────── */
+section{position:relative}
+.guide-svg{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  pointer-events:none;overflow:hidden;
+  z-index:0;
+}
+section > *:not(.guide-svg){position:relative;z-index:1}
+
+/* ─── PRELOADER ──────────────────────────────────── */
+#loader{
+  position:fixed;inset:0;z-index:8000;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;
+  overflow:hidden;
+}
+.ld-mark{
+  font-family:var(--f);font-weight:400;
+  font-size:clamp(1.8rem,5vw,4.5rem);
+  color:var(--ink);letter-spacing:-0.03em;
+  overflow:hidden;
+}
+.ld-mark span{display:block;transform:translateY(110%)}
+.ld-mark em{color:var(--red);font-style:normal}
+.ld-sub{
+  font-size:10px;font-weight:400;letter-spacing:0.22em;
+  color:var(--mid);opacity:0;
+}
+
+/* ─── NAV ────────────────────────────────────────── */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  padding:0 var(--mg);height:44px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid transparent;
+  transition:border-color 0.3s,background 0.3s;
+}
+.nav.scrolled{
+  background:rgba(255,255,255,0.96);
+  backdrop-filter:blur(10px);
+  border-bottom-color:var(--line);
+}
+.nav-logo{
+  font-family:var(--f);font-weight:400;font-size:0.95rem;
+  letter-spacing:-0.02em;color:var(--ink);
+}
+.nav-logo em{color:var(--red);font-style:normal}
+.nav-links{
+  display:flex;align-items:center;gap:24px;list-style:none;
+}
+.nav-links a{
+  font-size:11px;font-weight:400;letter-spacing:0.1em;
+  color:var(--ink);opacity:0.4;transition:opacity 0.2s;
+}
+.nav-links a:hover{opacity:1}
+
+/* ─── HERO ───────────────────────────────────────── */
+#hero{
+  min-height:100vh;
+  background:var(--bg);
+  padding:100px var(--mg) 60px;
+  display:flex;flex-direction:column;justify-content:center;
+  border-bottom:1px solid var(--line);
+}
+.hero-label{
+  font-size:10px;font-weight:400;letter-spacing:0.2em;
+  color:var(--mid);margin-bottom:28px;
+}
+.hero-headline{
+  font-weight:800;
+  font-size:clamp(3rem,10.5vw,13rem);
+  line-height:0.9;letter-spacing:-0.03em;
+  color:var(--ink);margin-bottom:36px;
+}
+/* Clip wrapper for reveal — padding prevents descender clip */
+.hl-line{
+  overflow:hidden;
+  padding-bottom:0.14em;
+  margin-bottom:-0.14em;
+}
+.hl-inner{
+  display:block;
+  transform:translateY(108%);
+  padding-bottom:0.02em;
+}
+.hero-row{
+  display:flex;align-items:flex-end;
+  gap:64px;flex-wrap:wrap;
+}
+.hero-sub{
+  font-size:clamp(0.85rem,1.2vw,1.05rem);
+  font-weight:300;color:var(--ink);opacity:0.5;
+  max-width:400px;line-height:1.55;letter-spacing:0.005em;
+}
+.hero-ctas{
+  display:flex;align-items:center;gap:20px;margin-left:auto;
+}
+.cta-primary{
+  font-size:11px;font-weight:600;letter-spacing:0.1em;
+  background:var(--ink);color:var(--bg);
+  padding:10px 22px;transition:background 0.2s;
+  display:inline-block;
+}
+.cta-primary:hover{background:var(--red)}
+.cta-link{
+  font-size:11px;font-weight:400;letter-spacing:0.08em;
+  color:var(--ink);opacity:0.38;transition:opacity 0.2s;
+}
+.cta-link:hover{opacity:0.85}
+
+/* ─── APPROACH ───────────────────────────────────── */
+#approach{
+  background:var(--ink);color:var(--bg);
+  padding:56px var(--mg);
+  border-bottom:1px solid #222;
+}
+.ap-grid{
+  display:grid;grid-template-columns:1fr 1.2fr;
+  gap:64px;align-items:start;
+}
+.ap-label{
+  font-size:10px;font-weight:400;letter-spacing:0.2em;
+  color:rgba(255,255,255,0.28);margin-bottom:24px;
+}
+.ap-headline{
+  font-weight:800;
+  font-size:clamp(2.2rem,5.5vw,7rem);
+  line-height:0.9;letter-spacing:-0.03em;
+  color:var(--bg);
+}
+.ap-body p{
+  font-size:14px;font-weight:300;letter-spacing:0.008em;
+  line-height:1.65;color:rgba(255,255,255,0.6);
+  margin-bottom:16px;max-width:52ch;
+}
+.ap-body p:last-of-type{margin-bottom:0}
+.ap-quote{
+  border-left:2px solid var(--red);
+  padding:0 0 0 18px;margin:28px 0;
+  font-size:0.9rem;font-weight:400;letter-spacing:0.01em;
+  color:rgba(255,255,255,0.42);line-height:1.5;
+  max-width:42ch;
+}
+.principles{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:16px;margin-top:36px;padding-top:28px;
+  border-top:1px solid rgba(255,255,255,0.09);
+}
+.pr-label{
+  font-size:9px;font-weight:700;letter-spacing:0.22em;
+  color:var(--red);margin-bottom:5px;
+}
+.pr-text{
+  font-size:12px;font-weight:300;letter-spacing:0.01em;
+  color:rgba(255,255,255,0.38);line-height:1.5;
+}
+
+/* ─── LINEAGE ────────────────────────────────────── */
+#lineage{
+  background:var(--bg);
+  padding:56px var(--mg);
+  border-bottom:1px solid var(--line);
+}
+.lg-top{
+  display:flex;align-items:baseline;
+  justify-content:space-between;
+  margin-bottom:32px;gap:24px;flex-wrap:wrap;
+}
+.lg-label{
+  font-size:10px;font-weight:400;letter-spacing:0.2em;
+  color:var(--mid);
+}
+.lg-headline{
+  font-weight:800;
+  font-size:clamp(1.8rem,4.5vw,6rem);
+  line-height:0.9;letter-spacing:-0.03em;color:var(--ink);
+}
+.lg-row{
+  display:grid;grid-template-columns:56px 1fr 1fr;
+  align-items:baseline;gap:24px;
+  padding:18px 0;border-top:1px solid var(--line);
+}
+.lg-row:last-child{border-bottom:1px solid var(--line)}
+.lg-num{
+  font-size:10px;font-weight:400;letter-spacing:0.14em;
+  color:var(--mid);
+}
+.lg-name{
+  font-weight:700;font-size:clamp(0.9rem,1.8vw,1.4rem);
+  letter-spacing:-0.01em;color:var(--ink);
+}
+.lg-desc{
+  font-size:13px;font-weight:300;letter-spacing:0.005em;
+  color:var(--mid);line-height:1.4;text-align:right;
+}
+.lg-close{
+  font-size:13px;font-weight:300;letter-spacing:0.01em;
+  color:var(--mid);margin-top:28px;padding-left:80px;
+}
+
+/* ─── CONTACT ────────────────────────────────────── */
+#contact{
+  background:var(--bg);
+  padding:56px var(--mg) 56px;
+  border-bottom:1px solid var(--line);
+}
+.ct-label{
+  font-size:10px;font-weight:400;letter-spacing:0.2em;
+  color:var(--mid);margin-bottom:20px;
+}
+.ct-headline{
+  font-weight:800;
+  font-size:clamp(2.8rem,8.5vw,11rem);
+  line-height:0.9;letter-spacing:-0.03em;
+  color:var(--ink);margin-bottom:40px;
+}
+.ct-body{
+  font-size:14px;font-weight:300;letter-spacing:0.008em;
+  line-height:1.6;color:var(--ink);opacity:0.45;
+  max-width:46ch;margin-bottom:40px;
+}
+.ct-link{
+  display:grid;grid-template-columns:1fr auto;
+  align-items:center;padding:16px 0;
+  border-top:1px solid var(--line);
+  transition:background 0.12s;
+}
+.ct-link:last-child{border-bottom:1px solid var(--line)}
+a.ct-link:hover{background:rgba(0,0,0,0.02)}
+a.ct-link:hover .ct-arrow{transform:translateX(4px)}
+.ct-link-name{
+  font-weight:700;font-size:clamp(0.95rem,2vw,1.6rem);
+  letter-spacing:-0.01em;color:var(--ink);
+}
+.ct-link-handle{
+  font-size:10px;font-weight:400;letter-spacing:0.14em;
+  color:var(--mid);margin-top:2px;
+}
+.ct-arrow{
+  font-size:1.2rem;color:var(--red);margin-left:16px;
+  transition:transform 0.18s;
+}
+.ct-link:hover .ct-arrow{transform:translateX(4px)}
+.ct-location{
+  font-size:10px;font-weight:400;letter-spacing:0.18em;
+  color:var(--mid);margin-top:32px;
+}
+
+/* ─── FOOTER ─────────────────────────────────────── */
+footer{
+  background:var(--ink);color:rgba(255,255,255,0.45);
+  padding:0 var(--mg);height:40px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.ft-logo{
+  font-weight:400;font-size:0.85rem;letter-spacing:-0.02em;
+  color:rgba(255,255,255,0.65);
+}
+.ft-logo em{color:var(--red);font-style:normal}
+.ft-right{
+  display:flex;align-items:center;gap:24px;
+  font-size:9px;letter-spacing:0.16em;
+}
+.ft-back{cursor:pointer;transition:color 0.15s}
+.ft-back:hover{color:rgba(255,255,255,0.8)}
+
+/* ─── LW HOVER ───────────────────────────────────── */
+.lw-target{white-space:nowrap}
+.lw-ch{display:inline-block;will-change:font-weight;font-weight:200}
+
+/* ─── REVEAL ─────────────────────────────────────── */
+.rv{opacity:0;transform:translateY(16px)}
+
+/* ─── LANG TOGGLE ────────────────────────────────── */
+#lang-toggle{
+  font-family:var(--f);font-size:11px;letter-spacing:0.1em;
+  color:var(--ink);opacity:0.4;
+  background:none;border:none;cursor:pointer;padding:0;
+  transition:opacity 0.2s;
+}
+#lang-toggle:hover{opacity:1}
+
+/* ─── RESPONSIVE ─────────────────────────────────── */
+@media(max-width:900px){
+  :root{--mg:20px}
+  .ap-grid{grid-template-columns:1fr;gap:36px}
+  .lg-row{grid-template-columns:44px 1fr;gap:12px}
+  .lg-desc{display:none}
+  .hero-ctas{margin-left:0}
+  .principles{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .nav-links{display:none}
+  .hero-row{flex-direction:column;gap:20px;align-items:flex-start}
+  .principles{grid-template-columns:1fr}
+}
+
+/* ─── Russian typography tightening ─── */
+:lang(ru) .hero-h    { letter-spacing: -0.04em; }
+:lang(ru) .hero-sub  { letter-spacing: -0.01em; line-height: 1.45; }
+:lang(ru) .ap-body p { letter-spacing: -0.01em; line-height: 1.5; }
+:lang(ru) .ap-quote  { letter-spacing: -0.02em; }
+:lang(ru) .lg-desc   { letter-spacing: -0.01em; line-height: 1.45; }
+:lang(ru) .ct-body   { letter-spacing: -0.01em; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- PRELOADER -->
+<div id="loader">
+  <div class="ld-mark"><span>kontext<em>.</em>dsgn</span></div>
+  <div class="ld-sub" data-i18n="loader.sub">Graphic Design · Art Direction</div>
+</div>
+
+<!-- NAV -->
+<nav class="nav" id="site-nav">
+  <a href="#hero" class="nav-logo"><svg width="28" height="28" viewBox="0 0 1080 1080" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="kontext."><path d="M330.697 214.594L461.609 214.59L461.542 614.483C496.523 613.945 531.699 614.794 566.683 614.42C574.915 614.33 585.773 613.776 591.231 620.59C601.14 632.956 610.922 645.617 620.647 658.115L678.586 732.687L724.602 791.976C731.637 801.052 743.787 815.791 749.419 824.893L645.975 824.862L616.227 825.099C602.801 825.125 594.258 827.14 585.404 815.464L506.877 707.918C492.769 688.691 477.182 666.395 462.509 647.996L462.469 824.123C448.423 823.475 429.942 824.023 415.619 824.023L330.744 824.092C331.01 802.597 330.706 780.385 330.7 758.838L330.68 624.276L330.697 214.594Z" fill="currentColor"/><path d="M653.373 403.856C691.864 400.258 726.01 428.482 729.717 466.961C733.424 505.439 705.296 539.661 666.831 543.479C628.203 547.313 593.815 519.048 590.092 480.414C586.369 441.78 614.73 407.469 653.373 403.856Z" fill="currentColor"/></svg></a>
+  <ul class="nav-links">
+    <li><a href="#approach" data-i18n="nav.approach">Approach</a></li>
+    <li><a href="#lineage" data-i18n="nav.lineage">Lineage</a></li>
+    <li><a href="#contact" data-i18n="nav.contact">Contact</a></li>
+  </ul>
+  <button id="lang-toggle">RU</button>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-label rv" data-i18n="hero.label">kontext.dsgn — Graphic Design Studio</div>
+  <h1 class="hero-headline">
+    <span class="hl-line"><span class="hl-inner lw-target" data-i18n="hero.line1">Context</span></span>
+    <span class="hl-line"><span class="hl-inner lw-target" data-i18n="hero.line2">is the</span></span>
+    <span class="hl-line"><span class="hl-inner lw-target" data-i18n="hero.line3">design.</span></span>
+  </h1>
+  <div class="hero-row">
+    <p class="hero-sub rv" data-i18n="hero.sub">An international creative company built around context design. Art direction, identity, motion, 3D, scenography, digital.</p>
+    <div class="hero-ctas rv">
+      <a href="#approach" class="cta-primary" data-i18n="hero.cta.primary">Our approach</a>
+      <a href="#contact" class="cta-link" data-i18n="hero.cta.link">Get in touch →</a>
+    </div>
+  </div>
+</section>
+
+<!-- APPROACH -->
+<section id="approach">
+  <div class="ap-grid">
+    <div>
+      <div class="ap-label rv" data-i18n="ap.label">01 — Approach</div>
+      <h2 class="ap-headline">
+        <span class="hl-line"><span class="hl-inner lw-target" data-i18n="ap.line1">We look</span></span>
+        <span class="hl-line"><span class="hl-inner lw-target" data-i18n="ap.line2">backward.</span></span>
+      </h2>
+    </div>
+    <div>
+      <div class="ap-body rv">
+        <p data-i18n="ap.p1">Most of what is called new is old work in a different coat. We prefer to go to the source.</p>
+        <p data-i18n="ap.p2">Bauhaus taught that form follows a purpose. The Swiss school taught that a grid is a kindness to the reader. Bodoni taught that contrast is beauty. The printed page taught that hierarchy is a form of respect.</p>
+        <p data-i18n="ap.p3">We do not try to get ahead of anyone or invent a new language. We take what has already been proven, and make it right for the person who will look at it: clear to read, correct in proportion, beautiful without apology.</p>
+        <p data-i18n="ap.p4">Good design is not a surprise. It is a recognition.</p>
+      </div>
+      <blockquote class="ap-quote rv" data-i18n="ap.quote">"Culture is blood. Everything else is shadow theatre."</blockquote>
+      <div class="principles rv">
+        <div><div class="pr-label" data-i18n="pr.label1">Clear</div><div class="pr-text" data-i18n="pr.text1">If the audience has to decode it, we have failed.</div></div>
+        <div><div class="pr-label" data-i18n="pr.label2">Correct</div><div class="pr-text" data-i18n="pr.text2">Proportion, rhythm and hierarchy before decoration.</div></div>
+        <div><div class="pr-label" data-i18n="pr.label3">Beautiful</div><div class="pr-text" data-i18n="pr.text3">Not as ornament, but as the result of the first two.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LINEAGE -->
+<section id="lineage">
+  <div class="lg-top">
+    <div class="lg-label rv" data-i18n="lg.label">02 — Lineage</div>
+    <h2 class="lg-headline">
+      <span class="hl-line"><span class="hl-inner lw-target" data-i18n="lg.line1">What we</span></span>
+      <span class="hl-line"><span class="hl-inner lw-target" data-i18n="lg.line2">learn from.</span></span>
+    </h2>
+  </div>
+  <div class="lg-rows">
+    <div class="lg-row rv"><div class="lg-num">01</div><div class="lg-name" data-i18n="lg.name1">Bauhaus</div><div class="lg-desc" data-i18n="lg.desc1">Form follows function. Nothing is added without a reason.</div></div>
+    <div class="lg-row rv"><div class="lg-num">02</div><div class="lg-name" data-i18n="lg.name2">Swiss Style</div><div class="lg-desc" data-i18n="lg.desc2">The grid as a system. Clarity as a moral position.</div></div>
+    <div class="lg-row rv"><div class="lg-num">03</div><div class="lg-name" data-i18n="lg.name3">Bodoni &amp; the Didones</div><div class="lg-desc" data-i18n="lg.desc3">Contrast, tension, elegance at scale.</div></div>
+    <div class="lg-row rv"><div class="lg-num">04</div><div class="lg-name" data-i18n="lg.name4">The Printed Page</div><div class="lg-desc" data-i18n="lg.desc4">Newspapers, posters, magazines. Hierarchy in one second.</div></div>
+    <div class="lg-row rv"><div class="lg-num">05</div><div class="lg-name" data-i18n="lg.name5">The Culture of the Room</div><div class="lg-desc" data-i18n="lg.desc5">Clubs, stages, streets. Design lives where people are.</div></div>
+  </div>
+  <p class="lg-close rv" data-i18n="lg.close">We study the past so the work can be simple in the present.</p>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="ct-label rv" data-i18n="ct.label">03 — Contact</div>
+  <h2 class="ct-headline">
+    <span class="hl-line"><span class="hl-inner lw-target" data-i18n="ct.line1">Contacts.</span></span>
+  </h2>
+  <p class="ct-body rv" data-i18n="ct.body">Have a project, a room, a brand or an idea that needs the right context? Write to us. We answer every message personally.</p>
+  <div class="ct-links">
+    <a href="https://www.instagram.com/kontext.png/" target="_blank" rel="noopener" class="ct-link rv">
+      <div><div class="ct-link-name">Instagram</div><div class="ct-link-handle">@kontext.png</div></div>
+      <span class="ct-arrow">→</span>
+    </a>
+    <a href="https://www.behance.net/kontextcommunity" target="_blank" rel="noopener" class="ct-link rv">
+      <div><div class="ct-link-name">Behance</div><div class="ct-link-handle">behance.net/kontextcommunity</div></div>
+      <span class="ct-arrow">→</span>
+    </a>
+    <a href="https://t.me/kontextcommunity" target="_blank" rel="noopener" class="ct-link rv">
+      <div><div class="ct-link-name">Telegram</div><div class="ct-link-handle">t.me/kontextcommunity</div></div>
+      <span class="ct-arrow">→</span>
+    </a>
+  </div>
+  <p class="ct-location rv" data-i18n="ct.location">Based in Shanghai. Working worldwide.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ft-logo">kontext<em>.</em></div>
+  <div class="ft-right">
+    <span>© 2026</span>
+    <span>Shanghai</span>
+    <span class="ft-back" data-i18n="ft.back" onclick="lenis.scrollTo(0,{duration:1.4})">Back to top ↑</span>
+  </div>
+</footer>
+
+<script src="assets/js/gsap.min.js"></script>
+<script src="assets/js/ScrollTrigger.min.js"></script>
+<script src="assets/js/lenis.min.js"></script>
+<script>
+/* ─── i18n ───────────────────────────────────────── */
+(function(){
+  const KEY = 'kx-lang';
+  const lang = localStorage.getItem(KEY) || 'en';
+  const T = {
+    en:{
+      'loader.sub':'Graphic Design · Art Direction',
+      'nav.approach':'Approach','nav.lineage':'Lineage','nav.contact':'Contact',
+      'hero.label':'kontext.dsgn — Graphic Design Studio',
+      'hero.line1':'Context','hero.line2':'is the','hero.line3':'design.',
+      'hero.sub':'An international creative company built around context design. Art direction, identity, motion, 3D, scenography, digital.',
+      'hero.cta.primary':'Our approach','hero.cta.link':'Get in touch →',
+      'ap.label':'01 — Approach','ap.line1':'We look','ap.line2':'backward.',
+      'ap.p1':'Most of what is called new is old work in a different coat. We prefer to go to the source.',
+      'ap.p2':'Bauhaus taught that form follows a purpose. The Swiss school taught that a grid is a kindness to the reader. Bodoni taught that contrast is beauty. The printed page taught that hierarchy is a form of respect.',
+      'ap.p3':'We do not try to get ahead of anyone or invent a new language. We take what has already been proven, and make it right for the person who will look at it: clear to read, correct in proportion, beautiful without apology.',
+      'ap.p4':'Good design is not a surprise. It is a recognition.',
+      'ap.quote':'"Culture is blood. Everything else is shadow theatre."',
+      'pr.label1':'Clear','pr.text1':'If the audience has to decode it, we have failed.',
+      'pr.label2':'Correct','pr.text2':'Proportion, rhythm and hierarchy before decoration.',
+      'pr.label3':'Beautiful','pr.text3':'Not as ornament, but as the result of the first two.',
+      'lg.label':'02 — Lineage','lg.line1':'What we','lg.line2':'learn from.',
+      'lg.name1':'Bauhaus','lg.desc1':'Form follows function. Nothing is added without a reason.',
+      'lg.name2':'Swiss Style','lg.desc2':'The grid as a system. Clarity as a moral position.',
+      'lg.name3':'Bodoni & the Didones','lg.desc3':'Contrast, tension, elegance at scale.',
+      'lg.name4':'The Printed Page','lg.desc4':'Newspapers, posters, magazines. Hierarchy in one second.',
+      'lg.name5':'The Culture of the Room','lg.desc5':'Clubs, stages, streets. Design lives where people are.',
+      'lg.close':'We study the past so the work can be simple in the present.',
+      'ct.label':'03 — Contact','ct.line1':'Contacts.',
+      'ct.body':'Have a project, a room, a brand or an idea that needs the right context? Write to us. We answer every message personally.',
+      'ct.location':'Based in Shanghai. Working worldwide.',
+      'ft.back':'Back to top ↑',
+    },
+    ru:{
+      'loader.sub':'Графический дизайн · Арт-дирекшн',
+      'nav.approach':'Подход','nav.lineage':'Источники','nav.contact':'Контакт',
+      'hero.label':'kontext.dsgn — студия графического дизайна',
+      'hero.line1':'Контекст','hero.line2':'и есть','hero.line3':'дизайн.',
+      'hero.sub':'Международная креативная студия, в основе которой — контекстный дизайн. Арт-дирекшн, айдентика, моушн, 3D, сценография, диджитал.',
+      'hero.cta.primary':'Наш подход','hero.cta.link':'Написать →',
+      'ap.label':'01 — Подход','ap.line1':'Мы смотрим','ap.line2':'назад.',
+      'ap.p1':'Большая часть того, что называют новым — это старое в другой обёртке. Мы идём к источнику.',
+      'ap.p2':'Баухаус говорил: форма следует функции. Швейцарская школа — что сетка это уважение к читателю. Бодони — что контраст и есть красота. Газетная полоса — что иерархия работает за секунду.',
+      'ap.p3':'Мы не гонимся за новизной и не придумываем новый язык. Мы берём то, что уже доказало своё, и делаем это верным для конкретного взгляда: читаемым, соразмерным, красивым без оправданий.',
+      'ap.p4':'Хороший дизайн не удивляет. Он — узнаётся.',
+      'ap.quote':'«Культура — это кровь. Всё остальное — театр теней.»',
+      'pr.label1':'Ясность','pr.text1':'Если нужно расшифровывать — значит, мы не справились.',
+      'pr.label2':'Точность','pr.text2':'Пропорция, ритм и иерархия — прежде всякого декора.',
+      'pr.label3':'Красота','pr.text3':'Не украшение — следствие двух предыдущих.',
+      'lg.label':'02 — Источники','lg.line1':'Откуда','lg.line2':'мы берём.',
+      'lg.name1':'Баухаус','lg.desc1':'Форма следует функции. Лишнее не добавляется.',
+      'lg.name2':'Швейцарский стиль','lg.desc2':'Сетка как система. Ясность как позиция.',
+      'lg.name3':'Бодони и Дидоны','lg.desc3':'Контраст, напряжение, элегантность в масштабе.',
+      'lg.name4':'Печатная страница','lg.desc4':'Газеты, плакаты, журналы. Иерархия за одну секунду.',
+      'lg.name5':'Культура пространства','lg.desc5':'Клубы, сцены, улица. Дизайн живёт там, где живут люди.',
+      'lg.close':'Мы изучаем прошлое, чтобы в настоящем работа говорила сама за себя.',
+      'ct.label':'03 — Контакт','ct.line1':'Напишите.',
+      'ct.body':'Есть проект, пространство, бренд или идея, которым нужен правильный контекст? Напишите. Отвечаем на каждое письмо лично.',
+      'ct.location':'Базируемся в Шанхае. Работаем по всему миру.',
+      'ft.back':'Наверх ↑',
+    }
+  };
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = T[lang][el.getAttribute('data-i18n')];
+    if (v !== undefined) el.textContent = v;
+  });
+  document.documentElement.lang = lang;
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = lang === 'en' ? 'RU' : 'EN';
+  window.__kxLang = lang; window.__kxKey = KEY;
+})();
+
+gsap.registerPlugin(ScrollTrigger);
+
+/* ─── LENIS — тяжёлый скролл ─────────────────────── */
+const lenis = new Lenis({
+  duration:        4.2,
+  easing:          t => 1 - Math.pow(1 - t, 4),
+  wheelMultiplier: 0.4,
+  smoothWheel:     true,
+});
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add(time => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
+
+/* ─── NAV ANCHORS через Lenis ─────────────────────── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const id = a.getAttribute('href');
+    if (id === '#') return;
+    e.preventDefault();
+    const target = document.querySelector(id);
+    if (target) lenis.scrollTo(target, { offset: -44, duration: 1.4,
+      easing: t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2 });
+  });
+});
+
+/* ─── PRELOADER ───────────────────────────────────── */
+(function() {
+  const loader = document.getElementById('loader');
+  const nav    = document.getElementById('site-nav');
+  const mark   = loader.querySelector('.ld-mark span');
+  const sub    = loader.querySelector('.ld-sub');
+
+  gsap.set(nav, { opacity: 0, y: -10 });
+
+  gsap.timeline({ delay: 0.2 })
+    .to(mark, { translateY: '0%', duration: 0.7, ease: 'power3.out' })
+    .to(sub,  { opacity: 1, duration: 0.4, ease: 'power2.out' }, '-=0.25');
+
+  gsap.timeline({
+    delay: 1.6,
+    onComplete() {
+      loader.style.display = 'none';
+      buildGuides();
+      addGuideScrollTriggers(); // ← скрол-скраб для каждого SVG
+    }
+  })
+    .to(loader, { yPercent: -100, duration: 0.65, ease: 'power3.inOut' })
+    .to(nav,    { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, '-=0.3');
+})();
+
+/* ─── NAV SCROLL ──────────────────────────────────── */
+(function() {
+  const nav = document.getElementById('site-nav');
+  lenis.on('scroll', ({ scroll }) => {
+    nav.classList.toggle('scrolled', scroll > 40);
+  });
+})();
+
+/* ─── HEADLINE REVEALS ────────────────────────────── */
+document.querySelectorAll('.hl-inner').forEach(el => {
+  ScrollTrigger.create({
+    trigger: el.closest('.hl-line') || el,
+    start: 'top 92%', once: true,
+    onEnter() {
+      gsap.to(el, { translateY: '0%', duration: 0.75, ease: 'power3.out' });
+    }
+  });
+});
+
+/* ─── SCROLL REVEALS ──────────────────────────────── */
+document.querySelectorAll('.rv').forEach(el => {
+  gsap.to(el, {
+    opacity: 1, y: 0, duration: 0.55, ease: 'power2.out',
+    scrollTrigger: { trigger: el, start: 'top 93%', once: true }
+  });
+});
+
+/* ─── LETTER-WIDTH HOVER ──────────────────────────── */
+(function() {
+  const R = 120, W_MIN = 200, W_MAX = 800;
+  document.querySelectorAll('.lw-target').forEach(el => {
+    const text = el.textContent;
+    el.innerHTML = '';
+    for (const c of text) {
+      const s = document.createElement('span');
+      s.className = 'lw-ch';
+      s.textContent = c;
+      s.style.fontWeight = W_MIN;
+      el.appendChild(s);
+    }
+  });
+  let mx = -9999, my = -9999;
+  window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; }, { passive:true });
+  (function tick() {
+    document.querySelectorAll('.lw-ch').forEach(ch => {
+      const r = ch.getBoundingClientRect();
+      const t = Math.max(0, 1 - Math.hypot(mx - r.left - r.width/2, my - r.top - r.height/2) / R);
+      ch.style.fontWeight = Math.round(W_MIN + (W_MAX - W_MIN) * t * t);
+    });
+    requestAnimationFrame(tick);
+  })();
+})();
+
+/* ─── GUIDE LINES ─────────────────────────────────── */
+function buildGuides() {
+
+  /* вспомогательные функции */
+  function mkSvg(section) {
+    const s = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    s.classList.add('guide-svg');
+    s.setAttribute('width','100%');
+    s.setAttribute('height','100%');
+    s.setAttribute('preserveAspectRatio','none');
+    section.insertBefore(s, section.firstChild);
+    return s;
+  }
+
+  function ln(svg, x1, y1, x2, y2, color, opacity, sw, dash) {
+    const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1', x1);  l.setAttribute('y1', y1);
+    l.setAttribute('x2', x2);  l.setAttribute('y2', y2);
+    l.setAttribute('stroke', color);
+    l.setAttribute('stroke-opacity', opacity);
+    l.setAttribute('stroke-width', sw || 0.75);
+    if (dash) l.setAttribute('stroke-dasharray', dash);
+    svg.appendChild(l);
+  }
+
+  // координаты элемента относительно его section
+  function rel(el, section) {
+    const sr = section.getBoundingClientRect();
+    const er = el.getBoundingClientRect();
+    return {
+      t: er.top  - sr.top,
+      b: er.bottom - sr.top,
+      l: er.left - sr.left,
+      r: er.right - sr.left,
+      w: er.width,
+      h: er.height,
+    };
+  }
+
+  /* ═══════════════════════════════════════════════
+     HERO
+  ═══════════════════════════════════════════════ */
+  (function() {
+    const sec  = document.getElementById('hero');
+    const svg  = mkSvg(sec);
+    const W    = sec.offsetWidth;
+    const H    = sec.offsetHeight;
+    const mg   = parseFloat(getComputedStyle(sec).paddingLeft);
+    const gc   = 'rgba(0,0,0,';
+    const rc   = 'rgba(192,21,42,';
+
+    // Вертикали по марже
+    ln(svg, mg,   0, mg,   H, gc+'0.12)', 1, 0.75);
+    ln(svg, W-mg, 0, W-mg, H, gc+'0.12)', 1, 0.75);
+
+    // Центральная вертикаль
+    ln(svg, W*0.5, 0, W*0.5, H, gc+'0.05)', 1, 0.5, '4,10');
+
+    // Горизонтали по тексту
+    const label = sec.querySelector('.hero-label');
+    const hl    = sec.querySelector('.hero-headline');
+    const row   = sec.querySelector('.hero-row');
+    const sub   = sec.querySelector('.hero-sub');
+
+    if (label) {
+      const p = rel(label, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.09)', 1, 0.5);
+      ln(svg, 0, p.b, W, p.b, gc+'0.06)', 1, 0.5);
+    }
+    if (hl) {
+      const p = rel(hl, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.1)',  1, 0.75);
+      ln(svg, 0, p.b, W, p.b, gc+'0.08)', 1, 0.75);
+      // вертикаль по правому краю заголовка
+      ln(svg, p.r, 0, p.r, H, gc+'0.07)', 1, 0.5, '3,8');
+
+      // горизонтали по каждой строке заголовка
+      sec.querySelectorAll('.hl-line').forEach(line => {
+        const q = rel(line, sec);
+        ln(svg, mg, q.t, W, q.t, gc+'0.06)', 1, 0.5);
+      });
+
+      // диагональ: от правого верха → до левого низа заголовка
+      ln(svg, W, p.t, p.l, p.b, rc+'0.1)', 1, 0.75, '2,12');
+    }
+    if (row) {
+      const p = rel(row, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.09)', 1, 0.75);
+      ln(svg, 0, p.b+8, W, p.b+8, gc+'0.07)', 1, 0.5);
+    }
+    if (sub) {
+      const p = rel(sub, sec);
+      // вертикаль по правому краю подзаголовка
+      ln(svg, p.r, 0, p.r, H, gc+'0.06)', 1, 0.5, '2,10');
+    }
+
+    // главная диагональ секции (solid)
+    ln(svg, mg, 0, W, H*0.7, gc+'0.06)', 1, 0.5, '4,10');
+    // контрдиагональ
+    ln(svg, W-mg, 0, 0, H, gc+'0.04)', 1, 0.5, '2,14');
+
+    // бордовая акцентная горизонталь по середине
+    ln(svg, 0, H*0.5, W, H*0.5, rc+'0.08)', 1, 0.5, '1,16');
+  })();
+
+  /* ═══════════════════════════════════════════════
+     APPROACH (тёмная секция)
+  ═══════════════════════════════════════════════ */
+  (function() {
+    const sec  = document.getElementById('approach');
+    const svg  = mkSvg(sec);
+    const W    = sec.offsetWidth;
+    const H    = sec.offsetHeight;
+    const mg   = parseFloat(getComputedStyle(sec).paddingLeft);
+    const gc   = 'rgba(255,255,255,';
+    const rc   = 'rgba(192,21,42,';
+
+    ln(svg, mg,   0, mg,   H, gc+'0.1)',  1, 0.75);
+    ln(svg, W-mg, 0, W-mg, H, gc+'0.1)',  1, 0.75);
+
+    // позиция разрыва колонок (1fr | 1.2fr при gap 64px)
+    const grid = sec.querySelector('.ap-grid');
+    const gridR = grid ? grid.getBoundingClientRect() : null;
+    const secR  = sec.getBoundingClientRect();
+
+    if (grid && gridR) {
+      // получаем позицию правой колонки
+      const rightCol = grid.children[1];
+      if (rightCol) {
+        const c = rel(rightCol, sec);
+        ln(svg, c.l, 0, c.l, H, gc+'0.12)', 1, 0.75);
+        // вертикаль по правому краю правой колонки
+        ln(svg, c.r, 0, c.r, H, gc+'0.08)', 1, 0.5, '3,8');
+      }
+    }
+
+    const hl   = sec.querySelector('.ap-headline');
+    const body = sec.querySelector('.ap-body');
+    const quot = sec.querySelector('.ap-quote');
+    const prin = sec.querySelector('.principles');
+
+    if (hl) {
+      const p = rel(hl, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.1)',  1, 0.75);
+      ln(svg, 0, p.b, W, p.b, gc+'0.08)', 1, 0.5);
+      sec.querySelectorAll('#approach .hl-line').forEach(l => {
+        const q = rel(l, sec);
+        ln(svg, mg, q.t, W*0.48, q.t, gc+'0.07)', 1, 0.5);
+      });
+    }
+    if (body) {
+      const p = rel(body, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.08)', 1, 0.5);
+    }
+    if (quot) {
+      const p = rel(quot, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.07)', 1, 0.5, '3,8');
+      ln(svg, 0, p.b, W, p.b, gc+'0.06)', 1, 0.5, '3,8');
+    }
+    if (prin) {
+      const p = rel(prin, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.1)',  1, 0.75);
+    }
+
+    // диагонали
+    ln(svg, mg, 0, W, H*0.65, gc+'0.06)', 1, 0.5, '3,10');
+    ln(svg, W, H*0.35, 0, H,  gc+'0.05)', 1, 0.5, '3,10');
+    // красная диагональ
+    ln(svg, 0, H*0.4, W, H*0.6, rc+'0.12)', 1, 0.75, '1,14');
+  })();
+
+  /* ═══════════════════════════════════════════════
+     LINEAGE
+  ═══════════════════════════════════════════════ */
+  (function() {
+    const sec  = document.getElementById('lineage');
+    const svg  = mkSvg(sec);
+    const W    = sec.offsetWidth;
+    const H    = sec.offsetHeight;
+    const mg   = parseFloat(getComputedStyle(sec).paddingLeft);
+    const gc   = 'rgba(0,0,0,';
+    const rc   = 'rgba(192,21,42,';
+
+    ln(svg, mg,   0, mg,   H, gc+'0.12)', 1, 0.75);
+    ln(svg, W-mg, 0, W-mg, H, gc+'0.12)', 1, 0.75);
+
+    // заголовок
+    const hl = sec.querySelector('.lg-headline');
+    const top = sec.querySelector('.lg-top');
+    if (top) {
+      const p = rel(top, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.1)', 1, 0.75);
+      ln(svg, 0, p.b, W, p.b, gc+'0.1)', 1, 0.75);
+    }
+
+    // вертикали по колонкам из первой строки
+    const firstRow = sec.querySelector('.lg-row');
+    if (firstRow) {
+      const num  = firstRow.querySelector('.lg-num');
+      const name = firstRow.querySelector('.lg-name');
+      const desc = firstRow.querySelector('.lg-desc');
+      if (num)  { const p = rel(num,  sec); ln(svg, p.l, 0, p.l, H, gc+'0.08)', 1, 0.5); ln(svg, p.r+8, 0, p.r+8, H, gc+'0.08)', 1, 0.5); }
+      if (name) { const p = rel(name, sec); ln(svg, p.l, 0, p.l, H, gc+'0.1)',  1, 0.75); }
+      if (desc) { const p = rel(desc, sec); ln(svg, p.l, 0, p.l, H, gc+'0.09)', 1, 0.5); }
+    }
+
+    // горизонтали по строкам
+    const rows = sec.querySelectorAll('.lg-row');
+    rows.forEach(r => {
+      const p = rel(r, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.07)', 1, 0.5);
+    });
+    if (rows.length) {
+      const last = rel(rows[rows.length-1], sec);
+      ln(svg, 0, last.b, W, last.b, gc+'0.07)', 1, 0.5);
+    }
+
+    // горизонталь по lg-close
+    const close = sec.querySelector('.lg-close');
+    if (close) {
+      const p = rel(close, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.06)', 1, 0.5, '3,8');
+    }
+
+    // диагонали
+    if (rows.length >= 2) {
+      const first = rel(rows[0], sec);
+      const last  = rel(rows[rows.length-1], sec);
+      ln(svg, mg, first.t, W-mg, last.b, gc+'0.06)', 1, 0.5, '4,10');
+      ln(svg, W-mg, first.t, mg, last.b, gc+'0.04)', 1, 0.5, '4,10');
+    }
+    ln(svg, 0, H*0.5, W, H*0.5, rc+'0.07)', 1, 0.5, '1,16');
+  })();
+
+  /* ═══════════════════════════════════════════════
+     CONTACT
+  ═══════════════════════════════════════════════ */
+  (function() {
+    const sec  = document.getElementById('contact');
+    const svg  = mkSvg(sec);
+    const W    = sec.offsetWidth;
+    const H    = sec.offsetHeight;
+    const mg   = parseFloat(getComputedStyle(sec).paddingLeft);
+    const gc   = 'rgba(0,0,0,';
+    const rc   = 'rgba(192,21,42,';
+
+    ln(svg, mg,   0, mg,   H, gc+'0.12)', 1, 0.75);
+    ln(svg, W-mg, 0, W-mg, H, gc+'0.12)', 1, 0.75);
+
+    const hl   = sec.querySelector('.ct-headline');
+    const body = sec.querySelector('.ct-body');
+    const links = sec.querySelectorAll('.ct-link');
+
+    if (hl) {
+      const p = rel(hl, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.1)',  1, 0.75);
+      ln(svg, 0, p.b, W, p.b, gc+'0.1)',  1, 0.75);
+      // вертикаль по правому краю заголовка
+      ln(svg, p.r, 0, p.r, H, gc+'0.07)', 1, 0.5, '3,8');
+    }
+    if (body) {
+      const p = rel(body, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.07)', 1, 0.5);
+      ln(svg, 0, p.b, W, p.b, gc+'0.06)', 1, 0.5);
+      ln(svg, p.r, 0, p.r, H, gc+'0.06)', 1, 0.5, '2,10');
+    }
+
+    links.forEach(link => {
+      const p = rel(link, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.07)', 1, 0.5);
+    });
+    if (links.length) {
+      const last = rel(links[links.length-1], sec);
+      ln(svg, 0, last.b, W, last.b, gc+'0.07)', 1, 0.5);
+    }
+
+    // диагонали
+    if (hl && links.length) {
+      const p = rel(hl, sec);
+      const q = rel(links[links.length-1], sec);
+      ln(svg, W, p.t, 0, q.b, gc+'0.06)', 1, 0.5, '4,10');
+      ln(svg, mg, p.t, W-mg, q.b, rc+'0.1)', 1, 0.75, '1,12');
+    }
+    ln(svg, W*0.5, 0, W*0.5, H, gc+'0.05)', 1, 0.5, '3,10');
+  })();
+
+} /* end buildGuides */
+
+/* ─── GUIDE SCROLL TRIGGERS ───────────────────────── */
+function addGuideScrollTriggers() {
+  /* убиваем старые, если перестраиваем после ресайза */
+  ScrollTrigger.getAll()
+    .filter(st => st.vars.id && st.vars.id.startsWith('guide-'))
+    .forEach(st => st.kill());
+
+  document.querySelectorAll('section').forEach(sec => {
+    const svg = sec.querySelector('.guide-svg');
+    if (!svg) return;
+
+    const isDark = sec.id === 'approach';
+    const isHero = sec.id === 'hero';
+
+    /* начало — абсолютно невидимы */
+    gsap.set(svg, { opacity: 0 });
+
+    /* hero скрабит при первых ~400px скролла */
+    if (isHero) {
+      gsap.to(svg, {
+        opacity: 1,
+        ease: 'none',
+        scrollTrigger: {
+          id: 'guide-hero',
+          trigger: sec,
+          start: 'top top',        /* scrollY = 0 */
+          end:   'top top-=380',   /* scrollY = 380px */
+          scrub: 0.8,
+        }
+      });
+      return;
+    }
+
+    /* остальные секции — линии темнеют при входе секции во вьюпорт */
+    gsap.to(svg, {
+      opacity: 1,
+      ease: 'none',
+      scrollTrigger: {
+        id: 'guide-' + sec.id,
+        trigger: sec,
+        start: 'top 90%',   /* секция только появилась снизу */
+        end:   'top 30%',   /* секция стоит ближе к верху → линии полностью тёмные */
+        scrub: 0.8,
+      }
+    });
+  });
+}
+
+/* ─── RESIZE ──────────────────────────────────────── */
+let resizeT;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => {
+    document.querySelectorAll('.guide-svg').forEach(s => s.remove());
+    buildGuides();
+    addGuideScrollTriggers();
+  }, 200);
+}, { passive: true });
+
+/* ─── LANG TOGGLE ─────────────────────────────────── */
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  const next = (window.__kxLang === 'ru') ? 'en' : 'ru';
+  localStorage.setItem(window.__kxKey, next);
+  location.reload();
+});
+</script>
+</body>
+</html>

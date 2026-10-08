@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kontext.stage — Live Design</title>
+<style>
+@font-face { font-family: 'Steppe'; src: url('assets/fonts/Steppe-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+@font-face { font-family: 'Steppe'; src: url('assets/fonts/Steppe-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; }
+@font-face { font-family: 'Steppe'; src: url('assets/fonts/Steppe-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; }
+</style>
+<style>
+
+:root {
+  --bg:   #0B0B0B;
+  --ink:  #EDEBE6;
+  --red:  #e0492a;
+  --mid:  #606060;
+  --dim:  rgba(237,235,230,0.07);
+  --mono: 'Courier New', ui-monospace, monospace;
+  --f:    'Steppe', sans-serif;
+  --mg:   clamp(1.5rem, 5vw, 4rem);
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: auto; -webkit-font-smoothing: antialiased; overflow-x: hidden; background: #0B0B0B; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f);
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-x: hidden;
+  text-align: center;
+}
+a { color: inherit; text-decoration: none; }
+
+@keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+.cursor { display: inline-block; color: var(--red); animation: blink 1s infinite; }
+
+/* ─── PRELOADER ──────────────────────────────────────── */
+#loader {
+  position: fixed; inset: 0; z-index: 8000;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-start;
+  padding: var(--mg);
+}
+.ld-header { font-size: 11px; color: var(--mid); margin-bottom: 2rem; opacity: 0; }
+.ld-lines { display: flex; flex-direction: column; gap: 5px; }
+.ld-line { font-size: 13px; color: var(--mid); opacity: 0; display: flex; gap: 10px; }
+.ld-prompt { color: var(--red); }
+.ld-ok { color: var(--red); }
+.ld-ready { margin-top: 2.5rem; font-weight: 400; font-size: clamp(2.5rem,6vw,5rem); letter-spacing: -0.03em; color: var(--ink); opacity: 0; }
+.ld-ready em { font-style: normal; color: var(--red); }
+
+/* ─── NAV ────────────────────────────────────────────── */
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 500; height: 48px; opacity: 0; transform: translateY(-110%); }
+.nav-wrap { max-width: 1360px; margin: 0 auto; padding: 0 var(--mg); height: 100%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid var(--dim); background: rgba(11,11,11,0.92); backdrop-filter: blur(12px); }
+.nav-left { font-size: 11px; color: var(--mid); text-align: left; }
+.nav-center { display: flex; align-items: center; justify-content: center; }
+.nav-mark { display: block; width: 22px; height: 22px; color: var(--ink); transition: color 0.2s; }
+.nav-mark:hover { color: var(--red); }
+.nav-right { font-size: 11px; color: var(--mid); display: flex; gap: 1.8rem; justify-content: flex-end; align-items: center; }
+.nav-link { transition: color 0.2s; }
+.nav-link:hover { color: var(--ink); }
+#lang-toggle {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--mid);
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  padding: 0;
+  transition: color 0.2s;
+}
+#lang-toggle:hover { color: var(--ink); }
+
+/* ─── HERO ───────────────────────────────────────────── */
+#hero {
+  padding: 100px var(--mg) 60px;
+  border-bottom: 1px solid var(--dim);
+  min-height: 100svh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.hero-headline {
+  font-family: var(--f); font-weight: 400;
+  font-size: clamp(4rem,12vw,15rem);
+  line-height: 0.88; letter-spacing: -0.03em;
+  color: var(--ink); margin-bottom: 1.4rem;
+}
+.hl-line { overflow: hidden; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+.hl-inner { display: block; transform: translateY(108%); padding-bottom: 0.04em; }
+.hero-sub { font-size: 12px; color: var(--mid); margin-bottom: 0.8rem; opacity: 0; }
+.hero-cursor { font-size: 1.3rem; opacity: 0; color: var(--red); }
+
+/* ─── SHARED ─────────────────────────────────────────── */
+.section-inner { max-width: 760px; margin: 0 auto; text-align: left; }
+.s-label { font-size: 11px; color: #333; display: block; margin-bottom: 1.5rem; }
+
+/* ─── INTRO ──────────────────────────────────────────── */
+#intro { padding: 3rem var(--mg); border-bottom: 1px solid var(--dim); }
+.intro-body { font-size: 14px; line-height: 1.8; color: var(--mid); }
+.intro-body strong { color: var(--ink); font-weight: normal; }
+.intro-status { margin-top: 1.5rem; font-size: 12px; line-height: 2; color: var(--mid); }
+.intro-status .lbl { color: #2e2e2e; display: inline-block; width: 110px; }
+.intro-status .val { color: var(--ink); }
+.intro-status .red { color: var(--red); }
+
+/* ─── TD NETWORK ─────────────────────────────────────── */
+#network { padding: 3rem var(--mg); border-bottom: 1px solid var(--dim); }
+.network-inner { max-width: 900px; margin: 0 auto; }
+.network-label { font-size: 11px; color: #333; margin-bottom: 0.5rem; display: block; text-align: left; }
+.network-sublabel { font-size: 11px; color: #222; margin-bottom: 1.2rem; display: block; text-align: left; font-style: italic; }
+.network-svg-wrap { width: 100%; overflow-x: auto; }
+.td-node-body { cursor: default; }
+.td-node-body rect.bg { transition: fill 0.15s; }
+.td-node-body:hover rect.bg { fill: #171717; }
+.td-node-body:hover .node-stroke { stroke: #3a3a3a; }
+.td-chop .family-strip { fill: #1a2e1a; }
+.td-chop .node-stroke  { stroke: #1e2e1e; }
+.td-chop .node-type    { fill: #3a5a3a; }
+.td-top  .family-strip { fill: #1e1530; }
+.td-top  .node-stroke  { stroke: #221a34; }
+.td-top  .node-type    { fill: #4a3a6a; }
+.td-comp .family-strip { fill: #201818; }
+.td-comp .node-stroke  { stroke: #241c1c; }
+.td-comp .node-type    { fill: #5a3a3a; }
+.td-wire {
+  fill: none; stroke: #222; stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+  animation: wire-flow 3s linear infinite;
+}
+.td-wire.active { stroke: var(--red); opacity: 0.5; }
+@keyframes wire-flow { to { stroke-dashoffset: -20; } }
+.network-legend { display: flex; gap: 2rem; margin-top: 1.5rem; justify-content: flex-start; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--mid); }
+.legend-dot { width: 8px; height: 8px; border-radius: 1px; }
+
+/* ─── APPROACH ───────────────────────────────────────── */
+#approach { padding: 3rem var(--mg); border-bottom: 1px solid var(--dim); }
+.code-plain { font-family: var(--mono); font-size: 13px; line-height: 2; color: var(--mid); text-align: left; }
+.code-plain .kw   { color: #7FBAFF; }
+.code-plain .fn   { color: #FFD580; }
+.code-plain .str  { color: #c07a50; }
+.code-plain .cmt  { color: #383838; font-style: italic; }
+.code-plain .prop { color: #9CDCFE; }
+.code-plain .pun  { color: #444; }
+.code-plain .ind1 { padding-left: 1.5em; display: block; }
+.code-plain .ind2 { padding-left: 3em; display: block; }
+
+/* ─── CREATE ─────────────────────────────────────────── */
+#create { padding: 3rem var(--mg); border-bottom: 1px solid var(--dim); }
+.dir-cmd { font-size: 12px; color: var(--mid); margin-bottom: 1rem; }
+.dir-cmd .prompt { color: var(--red); }
+.dir-rows { text-align: left; max-width: 760px; margin: 0 auto; }
+.dir-row { display: flex; gap: 1.2rem; align-items: baseline; padding: 5px 0; font-size: 13px; opacity: 0; transform: translateX(-8px); border-bottom: 1px solid #111; }
+.dir-row:last-child { border-bottom: none; }
+.dir-idx { color: #2a2a2a; width: 22px; flex-shrink: 0; font-size: 11px; }
+.dir-name { color: var(--ink); flex: 1; transition: color 0.15s; }
+.dir-row:hover .dir-name { color: var(--red); }
+.dir-desc { color: #2e2e2e; font-size: 12px; font-style: italic; }
+
+/* ─── TECH ───────────────────────────────────────────── */
+#tech { padding: 3rem var(--mg); border-bottom: 1px solid var(--dim); }
+
+/* ─── AUDIENCE ───────────────────────────────────────── */
+#audience { padding: 3rem var(--mg); border-bottom: 1px solid var(--dim); }
+.aud-intro { font-size: 11px; color: #333; margin-bottom: 1.5rem; text-align: left; font-style: italic; }
+.aud-rows { text-align: left; max-width: 760px; margin: 0 auto; }
+.aud-row { display: flex; gap: 1.5rem; align-items: baseline; padding: 10px 0; border-bottom: 1px solid #111; opacity: 0; transform: translateY(8px); }
+.aud-row:last-child { border-bottom: none; }
+.aud-prompt { color: var(--red); font-size: 13px; flex-shrink: 0; }
+.aud-who { color: var(--ink); font-size: 14px; width: 220px; flex-shrink: 0; }
+.aud-why { color: var(--mid); font-size: 12px; font-style: italic; }
+@media (max-width:600px){ .aud-row{flex-direction:column;gap:3px} .aud-who{width:auto} }
+
+/* ─── CONTACT ────────────────────────────────────────── */
+#contact { padding: 3rem var(--mg); border-bottom: 1px solid var(--dim); }
+.ct-cmd { font-size: 12px; color: var(--mid); margin-bottom: 1.5rem; opacity: 0; }
+.ct-cmd .prompt { color: var(--red); }
+.ct-headline { font-family: var(--f); font-weight: 400; font-size: clamp(3rem,9vw,11rem); line-height: 0.9; letter-spacing: -0.03em; color: var(--ink); margin-bottom: 2rem; }
+.ct-channels { max-width: 640px; margin: 0 auto; text-align: left; opacity: 0; }
+.ct-channel { margin-bottom: 1.2rem; }
+.ct-ch-head { font-size: 11px; color: #333; margin-bottom: 6px; font-style: italic; }
+.ct-ch-head .prompt { color: var(--red); font-style: normal; }
+.ct-field { display: flex; gap: 1.5rem; font-size: 13px; line-height: 1.9; }
+.ct-key { color: #333; width: 80px; flex-shrink: 0; }
+.ct-val { color: var(--ink); }
+.ct-val a { color: var(--ink); transition: color 0.15s; }
+.ct-val a:hover { color: var(--red); }
+
+/* ─── FOOTER ─────────────────────────────────────────── */
+footer { border-top: 1px solid var(--dim); padding: 0 var(--mg); height: 44px; display: flex; align-items: center; justify-content: space-between; }
+.ft-logo { font-size: 11px; color: var(--mid); }
+.ft-logo em { font-style: normal; color: var(--red); }
+.ft-copy { font-size: 10px; color: #2d2d2d; }
+.ft-tag { font-size: 10px; color: #252525; font-style: italic; }
+
+.rv { opacity: 0; transform: translateY(14px); }
+
+/* ─── Russian typography tightening ─── */
+:lang(ru) .hl-inner   { letter-spacing: -0.04em; }
+:lang(ru) .intro-body { letter-spacing: -0.01em; line-height: 1.5; }
+:lang(ru) .dir-desc   { letter-spacing: -0.01em; }
+:lang(ru) .aud-why    { letter-spacing: -0.01em; }
+
+</style>
+</head>
+<body>
+
+<!-- PRELOADER -->
+<div id="loader">
+  <div class="ld-header">kontext.stage v1.0.0 — system initializing</div>
+  <div class="ld-lines">
+    <div class="ld-line"><span class="ld-prompt">&gt;</span> init context_engine <span style="color:#222">.....................</span> <span class="ld-ok">[OK]</span></div>
+    <div class="ld-line"><span class="ld-prompt">&gt;</span> load_assets --type=visual <span style="color:#222">.............</span> <span class="ld-ok">[OK]</span></div>
+    <div class="ld-line"><span class="ld-prompt">&gt;</span> connect sound_system <span style="color:#222">.................</span> <span class="ld-ok">[OK]</span></div>
+    <div class="ld-line"><span class="ld-prompt">&gt;</span> boot generative_core <span style="color:#222">.................</span> <span class="ld-ok">[OK]</span></div>
+    <div class="ld-line"><span class="ld-prompt">&gt;</span> mount stage_interface <span style="color:#222">................</span> <span class="ld-ok">[DONE]</span></div>
+  </div>
+  <div class="ld-ready">kontext<em>.</em>stage</div>
+</div>
+
+<!-- NAV -->
+<nav class="nav" id="site-nav">
+  <div class="nav-wrap">
+    <span class="nav-left" data-i18n="nav.left">kontext.stage</span>
+    <a class="nav-center" href="kontext.new.html"><svg width="28" height="28" viewBox="0 0 1080 1080" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="kontext."><path d="M330.697 214.594L461.609 214.59L461.542 614.483C496.523 613.945 531.699 614.794 566.683 614.42C574.915 614.33 585.773 613.776 591.231 620.59C601.14 632.956 610.922 645.617 620.647 658.115L678.586 732.687L724.602 791.976C731.637 801.052 743.787 815.791 749.419 824.893L645.975 824.862L616.227 825.099C602.801 825.125 594.258 827.14 585.404 815.464L506.877 707.918C492.769 688.691 477.182 666.395 462.509 647.996L462.469 824.123C448.423 823.475 429.942 824.023 415.619 824.023L330.744 824.092C331.01 802.597 330.706 780.385 330.7 758.838L330.68 624.276L330.697 214.594Z" fill="currentColor"/><path d="M653.373 403.856C691.864 400.258 726.01 428.482 729.717 466.961C733.424 505.439 705.296 539.661 666.831 543.479C628.203 547.313 593.815 519.048 590.092 480.414C586.369 441.78 614.73 407.469 653.373 403.856Z" fill="currentColor"/></svg></a>
+    <div class="nav-right">
+      <a class="nav-link" href="#audience" data-i18n="nav.about">about</a>
+      <a class="nav-link" href="#contact" data-i18n="nav.contact">contact</a>
+      <button id="lang-toggle">RU</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <h1 class="hero-headline">
+    <span class="hl-line"><span class="hl-inner">The stage</span></span>
+    <span class="hl-line"><span class="hl-inner">is the</span></span>
+    <span class="hl-line"><span class="hl-inner">medium.</span></span>
+  </h1>
+  <p class="hero-sub" data-i18n="hero.sub">// live design &nbsp;·&nbsp; light &nbsp;·&nbsp; sound &nbsp;·&nbsp; generative graphics</p>
+  <span class="hero-cursor cursor">█</span>
+</section>
+
+<!-- INTRO -->
+<section id="intro">
+  <div class="section-inner">
+    <span class="s-label rv" data-i18n="intro.label">/* 01 — context */</span>
+    <p class="intro-body rv" data-i18n="intro.body">
+      kontext.stage is a <strong>live design studio</strong> built around the idea
+      that a concert, an installation, a performance — is a designed system.<br><br>
+      We work at the intersection of <strong>generative graphics</strong>, light, and sound
+      to build experiences that cannot be reproduced. Right now we are building our
+      visual language — reactive systems, custom shaders, real-time rendering for
+      live performance. The lights and sound follow.
+    </p>
+    <div class="intro-status rv">
+      <div><span class="lbl">status</span><span class="val red">ACTIVE</span></div>
+      <div><span class="lbl">location</span><span class="val" data-i18n="intro.status.location">Moscow</span></div>
+      <div><span class="lbl">direction</span><span class="val" data-i18n="intro.status.direction">Generative Graphics</span></div>
+      <div><span class="lbl">uptime</span><span class="val">2024 → <span class="cursor">█</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TD NODE NETWORK -->
+<section id="network">
+  <div class="network-inner">
+    <span class="s-label rv" data-i18n="network.label">/* 02 — stage.pipeline */</span>
+    <span class="network-sublabel rv" data-i18n="network.sublabel">// how the signal moves through the system — audio in → generative render → stage out</span>
+    <div class="network-svg-wrap rv">
+      <svg id="td-svg" viewBox="0 0 870 100" width="100%" preserveAspectRatio="xMidYMid meet" style="min-width:600px">
+
+        <!-- WIRES (drawn first, behind nodes) -->
+        <path class="td-wire" id="wire-0" d="M 135,50 C 158,50 162,50 185,50"/>
+        <path class="td-wire" id="wire-1" d="M 315,50 C 338,50 342,50 365,50"/>
+        <path class="td-wire" id="wire-2" d="M 495,50 C 518,50 522,50 545,50"/>
+        <path class="td-wire" id="wire-3" d="M 675,50 C 698,50 702,50 725,50"/>
+
+        <!-- NODE 0: sound_in CHOP -->
+        <g class="td-node-body td-chop" data-wire="wire-0" transform="translate(5,22)">
+          <rect class="bg" x="0" y="0" width="130" height="56" rx="3" fill="#0d140d"/>
+          <rect class="node-stroke" x="0.5" y="0.5" width="129" height="55" rx="2.5" fill="none" stroke="#1e2e1e" stroke-width="1"/>
+          <rect class="family-strip" x="0" y="0" width="130" height="5" rx="3"/>
+          <rect class="family-strip" x="0" y="2" width="130" height="3"/>
+          <text x="8" y="19" font-family="'Courier New',monospace" font-size="8" class="node-type" letter-spacing="0.08em">CHOP</text>
+          <text x="65" y="40" font-family="'Courier New',monospace" font-size="11" fill="#EDEBE6" text-anchor="middle">sound_in</text>
+          <circle cx="130" cy="28" r="3.5" fill="#0d140d" stroke="#2a422a" stroke-width="1"/>
+        </g>
+
+        <!-- NODE 1: analyze CHOP -->
+        <g class="td-node-body td-chop" data-wire-in="wire-0" data-wire-out="wire-1" transform="translate(185,22)">
+          <rect class="bg" x="0" y="0" width="130" height="56" rx="3" fill="#0d140d"/>
+          <rect class="node-stroke" x="0.5" y="0.5" width="129" height="55" rx="2.5" fill="none" stroke="#1e2e1e" stroke-width="1"/>
+          <rect class="family-strip" x="0" y="0" width="130" height="5" rx="3"/>
+          <rect class="family-strip" x="0" y="2" width="130" height="3"/>
+          <text x="8" y="19" font-family="'Courier New',monospace" font-size="8" class="node-type" letter-spacing="0.08em">CHOP</text>
+          <text x="65" y="40" font-family="'Courier New',monospace" font-size="11" fill="#EDEBE6" text-anchor="middle">analyze_fft</text>
+          <circle cx="0" cy="28" r="3.5" fill="#0d140d" stroke="#2a422a" stroke-width="1"/>
+          <circle cx="130" cy="28" r="3.5" fill="#0d140d" stroke="#2a422a" stroke-width="1"/>
+        </g>
+
+        <!-- NODE 2: noise TOP -->
+        <g class="td-node-body td-top" data-wire-in="wire-1" data-wire-out="wire-2" transform="translate(365,22)">
+          <rect class="bg" x="0" y="0" width="130" height="56" rx="3" fill="#0e0c16"/>
+          <rect class="node-stroke" x="0.5" y="0.5" width="129" height="55" rx="2.5" fill="none" stroke="#221a34" stroke-width="1"/>
+          <rect class="family-strip" x="0" y="0" width="130" height="5" rx="3"/>
+          <rect class="family-strip" x="0" y="2" width="130" height="3"/>
+          <text x="8" y="19" font-family="'Courier New',monospace" font-size="8" class="node-type" letter-spacing="0.08em">TOP</text>
+          <text x="65" y="40" font-family="'Courier New',monospace" font-size="11" fill="#EDEBE6" text-anchor="middle">generative</text>
+          <circle cx="0" cy="28" r="3.5" fill="#0e0c16" stroke="#3a2a5a" stroke-width="1"/>
+          <circle cx="130" cy="28" r="3.5" fill="#0e0c16" stroke="#3a2a5a" stroke-width="1"/>
+        </g>
+
+        <!-- NODE 3: light_ctrl CHOP -->
+        <g class="td-node-body td-chop" data-wire-in="wire-2" data-wire-out="wire-3" transform="translate(545,22)">
+          <rect class="bg" x="0" y="0" width="130" height="56" rx="3" fill="#0d140d"/>
+          <rect class="node-stroke" x="0.5" y="0.5" width="129" height="55" rx="2.5" fill="none" stroke="#1e2e1e" stroke-width="1"/>
+          <rect class="family-strip" x="0" y="0" width="130" height="5" rx="3"/>
+          <rect class="family-strip" x="0" y="2" width="130" height="3"/>
+          <text x="8" y="19" font-family="'Courier New',monospace" font-size="8" class="node-type" letter-spacing="0.08em">CHOP</text>
+          <text x="65" y="40" font-family="'Courier New',monospace" font-size="11" fill="#EDEBE6" text-anchor="middle">light_ctrl</text>
+          <circle cx="0" cy="28" r="3.5" fill="#0d140d" stroke="#2a422a" stroke-width="1"/>
+          <circle cx="130" cy="28" r="3.5" fill="#0d140d" stroke="#2a422a" stroke-width="1"/>
+        </g>
+
+        <!-- NODE 4: stage_out COMP -->
+        <g class="td-node-body td-comp" data-wire-in="wire-3" transform="translate(725,22)">
+          <rect class="bg" x="0" y="0" width="130" height="56" rx="3" fill="#150e0e"/>
+          <rect class="node-stroke" x="0.5" y="0.5" width="129" height="55" rx="2.5" fill="none" stroke="#241c1c" stroke-width="1"/>
+          <rect class="family-strip" x="0" y="0" width="130" height="5" rx="3"/>
+          <rect class="family-strip" x="0" y="2" width="130" height="3"/>
+          <text x="8" y="19" font-family="'Courier New',monospace" font-size="8" class="node-type" letter-spacing="0.08em">COMP</text>
+          <text x="65" y="40" font-family="'Courier New',monospace" font-size="11" fill="#EDEBE6" text-anchor="middle">stage_out</text>
+          <circle cx="0" cy="28" r="3.5" fill="#150e0e" stroke="#4a2a2a" stroke-width="1"/>
+        </g>
+
+      </svg>
+    </div>
+    <div class="network-legend rv">
+      <div class="legend-item"><div class="legend-dot" style="background:#1a2e1a"></div><span data-i18n="legend.chop">CHOP — channel data</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1e1530"></div><span data-i18n="legend.top">TOP — texture / visual</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#201818"></div><span data-i18n="legend.comp">COMP — component / output</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- APPROACH -->
+<section id="approach">
+  <div class="section-inner">
+    <span class="s-label rv" data-i18n="approach.label">/* 03 — approach */</span>
+    <div class="code-plain rv">
+      <span class="cmt">// approach.js</span>
+      <span class="kw">const</span> <span class="prop">approach</span> <span class="pun">=</span> <span class="pun">{</span>
+      <span class="ind1"><span class="prop">principle</span><span class="pun">:</span>  <span class="str">"the stage is a system"</span><span class="pun">,</span></span>
+      <span class="ind1"><span class="prop">input</span><span class="pun">:</span>      <span class="pun">[</span><span class="str">"sound"</span><span class="pun">,</span> <span class="str">"light"</span><span class="pun">,</span> <span class="str">"space"</span><span class="pun">,</span> <span class="str">"data"</span><span class="pun">],</span></span>
+      <span class="ind1"><span class="prop">output</span><span class="pun">:</span>     <span class="str">"experience"</span><span class="pun">,</span></span>
+      &nbsp;
+      <span class="ind1"><span class="fn">process</span><span class="pun">:</span> <span class="kw">function</span><span class="pun">(</span><span class="prop">event</span><span class="pun">)</span> <span class="pun">{</span></span>
+      <span class="ind2"><span class="kw">const</span> <span class="prop">signal</span>  <span class="pun">=</span> event<span class="pun">.</span><span class="fn">audio</span><span class="pun">.</span><span class="fn">analyze</span><span class="pun">();</span></span>
+      <span class="ind2"><span class="kw">const</span> <span class="prop">visual</span>  <span class="pun">=</span> <span class="fn">generative</span><span class="pun">.</span><span class="fn">render</span><span class="pun">(</span><span class="prop">signal</span><span class="pun">);</span></span>
+      <span class="ind2"><span class="kw">const</span> <span class="prop">light</span>   <span class="pun">=</span> <span class="fn">stage</span><span class="pun">.</span><span class="fn">illuminate</span><span class="pun">(</span><span class="prop">visual</span><span class="pun">);</span></span>
+      <span class="ind2"><span class="kw">return</span> <span class="fn">audience</span><span class="pun">.</span><span class="fn">feel</span><span class="pun">(</span><span class="prop">light</span><span class="pun">);</span></span>
+      <span class="ind1"><span class="pun">},</span></span>
+      &nbsp;
+      <span class="ind1"><span class="prop">belief</span><span class="pun">:</span>     <span class="str">"every show is unrepeatable"</span></span>
+      <span class="pun">};</span>
+    </div>
+  </div>
+</section>
+
+<!-- CREATE -->
+<section id="create">
+  <div class="section-inner">
+    <span class="s-label rv" data-i18n="create.label">/* 04 — what we create */</span>
+    <div class="dir-cmd rv"><span class="prompt">$</span> ls -la ./directions/</div>
+  </div>
+  <div class="dir-rows">
+    <div class="dir-row"><span class="dir-idx">01</span><span class="dir-name" data-i18n="dir.01">Generative_Graphics</span><span class="dir-desc" data-i18n="dir.01.desc">// real-time visuals driven by sound</span></div>
+    <div class="dir-row"><span class="dir-idx">02</span><span class="dir-name" data-i18n="dir.02">Light_Design</span><span class="dir-desc" data-i18n="dir.02.desc">// lighting as language</span></div>
+    <div class="dir-row"><span class="dir-idx">03</span><span class="dir-name" data-i18n="dir.03">Sound_Direction</span><span class="dir-desc" data-i18n="dir.03.desc">// spatial audio, live mixing</span></div>
+    <div class="dir-row"><span class="dir-idx">04</span><span class="dir-name" data-i18n="dir.04">Stage_Architecture</span><span class="dir-desc" data-i18n="dir.04.desc">// the room as medium</span></div>
+    <div class="dir-row"><span class="dir-idx">05</span><span class="dir-name" data-i18n="dir.05">Live_Performance</span><span class="dir-desc" data-i18n="dir.05.desc">// concerts, festivals, events</span></div>
+    <div class="dir-row"><span class="dir-idx">06</span><span class="dir-name" data-i18n="dir.06">Installation</span><span class="dir-desc" data-i18n="dir.06.desc">// interactive, site-specific</span></div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section id="tech">
+  <div class="section-inner">
+    <span class="s-label rv" data-i18n="tech.label">/* 05 — technology */</span>
+    <div class="code-plain rv">
+      <span class="cmt">// stack.config.json</span>
+      <span class="pun">{</span>
+      <span class="ind1"><span class="prop">"engine"</span><span class="pun">:</span>               <span class="str">"TouchDesigner"</span><span class="pun">,</span></span>
+      <span class="ind1"><span class="prop">"renderer"</span><span class="pun">:</span>             <span class="str">"GLSL + Python"</span><span class="pun">,</span></span>
+      <span class="ind1"><span class="prop">"audio_analysis"</span><span class="pun">:</span>       <span class="str">"real-time FFT"</span><span class="pun">,</span></span>
+      <span class="ind1"><span class="prop">"output"</span><span class="pun">:</span>               <span class="pun">[</span><span class="str">"DMX lighting"</span><span class="pun">,</span> <span class="str">"projection"</span><span class="pun">,</span> <span class="str">"LED walls"</span><span class="pun">],</span></span>
+      <span class="ind1"><span class="prop">"currently_exploring"</span><span class="pun">:</span>  <span class="pun">[</span><span class="str">"generative AI"</span><span class="pun">,</span> <span class="str">"computer vision"</span><span class="pun">,</span> <span class="str">"spatial audio"</span><span class="pun">]</span></span>
+      <span class="pun">}</span>
+    </div>
+  </div>
+</section>
+
+<!-- AUDIENCE -->
+<section id="audience">
+  <div class="section-inner">
+    <span class="s-label rv" data-i18n="audience.label">/* 06 — who it's for */</span>
+    <p class="aud-intro rv" data-i18n="aud.intro">// who it's for</p>
+  </div>
+  <div class="aud-rows">
+    <div class="aud-row rv"><span class="aud-prompt">&gt;</span><span class="aud-who" data-i18n="aud.01.who">festivals &amp; events</span><span class="aud-why" data-i18n="aud.01.why">// you need visuals that react live</span></div>
+    <div class="aud-row rv"><span class="aud-prompt">&gt;</span><span class="aud-who" data-i18n="aud.02.who">labels &amp; artists</span><span class="aud-why" data-i18n="aud.02.why">// your music deserves a visual language</span></div>
+    <div class="aud-row rv"><span class="aud-prompt">&gt;</span><span class="aud-who" data-i18n="aud.03.who">venues &amp; spaces</span><span class="aud-why" data-i18n="aud.03.why">// we design the room</span></div>
+    <div class="aud-row rv"><span class="aud-prompt">&gt;</span><span class="aud-who" data-i18n="aud.04.who">brands</span><span class="aud-why" data-i18n="aud.04.why">// experiences &gt; ads</span></div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <p class="ct-cmd rv"><span class="prompt">$</span> <span data-i18n="contact.cmd">contact --studio=kontext.stage</span></p>
+  <h2 class="ct-headline">
+    <span class="hl-line"><span class="hl-inner">Let's build</span></span>
+    <span class="hl-line"><span class="hl-inner">the room.</span></span>
+  </h2>
+  <div class="ct-channels rv">
+    <div class="ct-channel">
+      <div class="ct-ch-head"><span class="prompt">&gt;</span> <span data-i18n="ct.ch1.head">channel: Instagram</span></div>
+      <div class="ct-field"><span class="ct-key">handle</span><span class="ct-val">@kontext._</span></div>
+      <div class="ct-field"><span class="ct-key">link</span><span class="ct-val"><a href="https://www.instagram.com/kontext._/" target="_blank" rel="noopener">instagram.com/kontext._ ↗</a></span></div>
+    </div>
+    <div class="ct-channel">
+      <div class="ct-ch-head"><span class="prompt">&gt;</span> <span data-i18n="ct.ch2.head">channel: Telegram</span></div>
+      <div class="ct-field"><span class="ct-key">handle</span><span class="ct-val">t.me/kontextcommunity</span></div>
+      <div class="ct-field"><span class="ct-key">link</span><span class="ct-val"><a href="https://t.me/kontextcommunity" target="_blank" rel="noopener">t.me/kontextcommunity ↗</a></span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="ft-logo">kontext<em>.</em>stage</div>
+  <div class="ft-copy">© 2026</div>
+  <div class="ft-tag" data-i18n="footer.tag">// all shows are unrepeatable</div>
+</footer>
+
+<script src="assets/js/gsap.min.js"></script>
+<script src="assets/js/ScrollTrigger.min.js"></script>
+<script src="assets/js/lenis.min.js"></script>
+<script>
+/* ─── FAILSAFE: hide loader if JS crashes ────────────── */
+(function() {
+  var _t = setTimeout(function() {
+    var l = document.getElementById('loader');
+    if (l) l.style.display = 'none';
+  }, 6000);
+  window.__loaderTimer = _t;
+})();
+window.onerror = function() {
+  var l = document.getElementById('loader');
+  if (l) { l.style.transition = 'opacity 0.4s'; l.style.opacity = '0'; setTimeout(function(){ l.style.display='none'; }, 400); }
+};
+
+/* ─── LANGUAGE (must run first) ──────────────────────── */
+const LANG = localStorage.getItem('kx-lang') || 'en';
+const TRANSLATIONS = {
+  en: {
+    'nav.left': 'kontext.stage',
+    'nav.about': 'about',
+    'nav.contact': 'contact',
+    'hero.sub': '// live design &nbsp;·&nbsp; light &nbsp;·&nbsp; sound &nbsp;·&nbsp; generative graphics',
+    'intro.label': '/* 01 — context */',
+    'intro.body': 'kontext.stage is a <strong>live design studio</strong> built around the idea that a concert, an installation, a performance — is a designed system.<br><br>We work at the intersection of <strong>generative graphics</strong>, light, and sound to build experiences that cannot be reproduced. Right now we are building our visual language — reactive systems, custom shaders, real-time rendering for live performance. The lights and sound follow.',
+    'intro.status.location': 'Moscow',
+    'intro.status.direction': 'Generative Graphics',
+    'network.label': '/* 02 — stage.pipeline */',
+    'network.sublabel': '// how the signal moves through the system — audio in → generative render → stage out',
+    'legend.chop': 'CHOP — channel data',
+    'legend.top': 'TOP — texture / visual',
+    'legend.comp': 'COMP — component / output',
+    'approach.label': '/* 03 — approach */',
+    'create.label': '/* 04 — what we create */',
+    'dir.01': 'Generative_Graphics',
+    'dir.01.desc': '// real-time visuals driven by sound',
+    'dir.02': 'Light_Design',
+    'dir.02.desc': '// lighting as language',
+    'dir.03': 'Sound_Direction',
+    'dir.03.desc': '// spatial audio, live mixing',
+    'dir.04': 'Stage_Architecture',
+    'dir.04.desc': '// the room as medium',
+    'dir.05': 'Live_Performance',
+    'dir.05.desc': '// concerts, festivals, events',
+    'dir.06': 'Installation',
+    'dir.06.desc': '// interactive, site-specific',
+    'tech.label': '/* 05 — technology */',
+    'audience.label': "/* 06 — who it's for */",
+    'aud.intro': "// who it's for",
+    'aud.01.who': 'festivals &amp; events',
+    'aud.01.why': '// you need visuals that react live',
+    'aud.02.who': 'labels &amp; artists',
+    'aud.02.why': '// your music deserves a visual language',
+    'aud.03.who': 'venues &amp; spaces',
+    'aud.03.why': '// we design the room',
+    'aud.04.who': 'brands',
+    'aud.04.why': '// experiences &gt; ads',
+    'contact.cmd': 'contact --studio=kontext.stage',
+    'ct.ch1.head': 'channel: Instagram',
+    'ct.ch2.head': 'channel: Telegram',
+    'footer.tag': '// all shows are unrepeatable',
+  },
+  ru: {
+    'nav.left': 'kontext.stage',
+    'nav.about': 'о нас',
+    'nav.contact': 'контакт',
+    'hero.sub': '// живой дизайн &nbsp;·&nbsp; свет &nbsp;·&nbsp; звук &nbsp;·&nbsp; генеративная графика',
+    'intro.label': '/* 01 — контекст */',
+    'intro.body': 'kontext.stage — <strong>студия живого дизайна</strong>. Концерт, инсталляция, перформанс — это спроектированная система, и мы проектируем её.<br><br>Работаем на пересечении <strong>генеративной графики</strong>, света и звука — создаём то, что нельзя повторить. Сейчас строим собственный визуальный язык: реактивные системы, кастомные шейдеры, рендеринг реального времени для живой сцены.',
+    'intro.status.location': 'Москва',
+    'intro.status.direction': 'Генеративная графика',
+    'network.label': '/* 02 — сигнальная цепь */',
+    'network.sublabel': '// путь сигнала через систему — аудио вход → генеративный рендер → выход на сцену',
+    'legend.chop': 'CHOP — канальные данные',
+    'legend.top': 'TOP — текстура / визуал',
+    'legend.comp': 'COMP — компонент / выход',
+    'approach.label': '/* 03 — подход */',
+    'create.label': '/* 04 — что мы делаем */',
+    'dir.01': 'Генеративная_Графика',
+    'dir.01.desc': '// визуал реального времени, управляемый звуком',
+    'dir.02': 'Световой_Дизайн',
+    'dir.02.desc': '// свет как язык',
+    'dir.03': 'Звуковая_Режиссура',
+    'dir.03.desc': '// пространственный звук, живой микс',
+    'dir.04': 'Архитектура_Сцены',
+    'dir.04.desc': '// пространство как медиум',
+    'dir.05': 'Живое_Выступление',
+    'dir.05.desc': '// концерты, фестивали, ивенты',
+    'dir.06': 'Инсталляция',
+    'dir.06.desc': '// интерактивная, site-specific',
+    'tech.label': '/* 05 — технологии */',
+    'audience.label': '/* 06 — для кого */',
+    'aud.intro': '// для кого',
+    'aud.01.who': 'фестивали и ивенты',
+    'aud.01.why': '// нужен визуал, который реагирует вживую',
+    'aud.02.who': 'лейблы и артисты',
+    'aud.02.why': '// музыка заслуживает своего визуального языка',
+    'aud.03.who': 'площадки и пространства',
+    'aud.03.why': '// мы проектируем комнату',
+    'aud.04.who': 'бренды',
+    'aud.04.why': '// опыт важнее рекламы',
+    'contact.cmd': 'контакт --студия=kontext.stage',
+    'ct.ch1.head': 'канал: Instagram',
+    'ct.ch2.head': 'канал: Telegram',
+    'footer.tag': '// каждое шоу — единственное',
+  }
+};
+
+function t(key) { return (TRANSLATIONS[LANG] && TRANSLATIONS[LANG][key]) || TRANSLATIONS.en[key] || key; }
+
+function applyI18n() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n);
+    if (v !== undefined) el.innerHTML = v;
+  });
+  if (LANG === 'ru') {
+    const heroInners = document.querySelectorAll('#hero .hl-inner');
+    const heroRu = ['Сцена', '— это', 'медиум.'];
+    heroInners.forEach((el, i) => { if (heroRu[i]) el.textContent = heroRu[i]; });
+    const ctInners = document.querySelectorAll('#contact .hl-inner');
+    const ctRu = ['Давай построим', 'комнату.'];
+    ctInners.forEach((el, i) => { if (ctRu[i]) el.textContent = ctRu[i]; });
+  }
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = LANG === 'en' ? 'RU' : 'EN';
+}
+
+applyI18n();
+
+/* ─── GSAP + LENIS ───────────────────────────────────── */
+gsap.registerPlugin(ScrollTrigger);
+
+const lenis = new Lenis({
+  duration: 1.4,
+  easing: t => 1 - Math.pow(1 - t, 4),
+  wheelMultiplier: 0.7,
+  smoothWheel: true,
+});
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add(time => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
+
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const id = a.getAttribute('href');
+    if (id.length < 2) return;
+    const target = document.querySelector(id);
+    if (!target) return;
+    e.preventDefault();
+    lenis.scrollTo(target, { offset: -48, duration: 1.4,
+      easing: t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2 });
+  });
+});
+
+/* ─── TD NODE HOVER ──────────────────────────────────── */
+(function() {
+  document.querySelectorAll('.td-node-body').forEach(node => {
+    node.addEventListener('mouseenter', () => {
+      const wOut = node.dataset.wireOut;
+      const wIn  = node.dataset.wireIn;
+      if (wOut) document.getElementById(wOut)?.classList.add('active');
+      if (wIn)  document.getElementById(wIn)?.classList.add('active');
+    });
+    node.addEventListener('mouseleave', () => {
+      document.querySelectorAll('.td-wire.active').forEach(w => w.classList.remove('active'));
+    });
+  });
+})();
+
+/* ─── PRELOADER ──────────────────────────────────────── */
+(function() {
+  const loader = document.getElementById('loader');
+  const nav    = document.getElementById('site-nav');
+  const header = loader.querySelector('.ld-header');
+  const lines  = Array.from(loader.querySelectorAll('.ld-line'));
+  const ready  = loader.querySelector('.ld-ready');
+
+  gsap.set(nav, { opacity: 0, y: -10 });
+
+  /* single master timeline — exit chained directly, no tl.totalDuration() race */
+  const tl = gsap.timeline({
+    delay: 0.3,
+    onComplete() { clearTimeout(window.__loaderTimer); loader.style.display = 'none'; }
+  });
+
+  tl.to(header, { opacity: 1, duration: 0.4, ease: 'power2.out' });
+
+  lines.forEach((line, i) => {
+    tl.to(line, { opacity: 1, duration: 0.1, ease: 'none' },
+      `+=${i === 0 ? 0.2 : 0.22}`);
+  });
+
+  tl.to(ready, { opacity: 1, duration: 0.6, ease: 'power2.out' }, '+=0.3');
+  tl.to(loader, { yPercent: -100, duration: 0.7, ease: 'power3.inOut' }, '+=0.8');
+  tl.to(nav, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, '-=0.3');
+})();
+
+/* ─── HERO REVEAL ────────────────────────────────────── */
+(function() {
+  const inners = document.querySelectorAll('#hero .hl-inner');
+  const sub    = document.querySelector('.hero-sub');
+  const cursor = document.querySelector('.hero-cursor');
+  gsap.timeline({ delay: 4.0 })
+    .to(inners, { translateY: '0%', duration: 0.9, stagger: 0.12, ease: 'power3.out' })
+    .to(sub,    { opacity: 1, duration: 0.5, ease: 'power2.out' }, '-=0.3')
+    .to(cursor, { opacity: 1, duration: 0.3 }, '-=0.1');
+})();
+
+/* ─── CONTACT HEADLINE ───────────────────────────────── */
+document.querySelectorAll('#contact .hl-inner').forEach((el, i) => {
+  gsap.to(el, {
+    translateY: '0%', duration: 0.8, ease: 'power3.out', delay: i * 0.1,
+    scrollTrigger: { trigger: el, start: 'top 88%', once: true }
+  });
+});
+
+/* ─── SCROLL REVEALS ─────────────────────────────────── */
+document.querySelectorAll('.rv').forEach(el => {
+  gsap.to(el, {
+    opacity: 1, y: 0, duration: 0.7, ease: 'power2.out',
+    scrollTrigger: { trigger: el, start: 'top 88%', once: true }
+  });
+});
+
+document.querySelectorAll('.dir-row').forEach((row, i) => {
+  gsap.to(row, {
+    opacity: 1, x: 0, duration: 0.5, ease: 'power2.out', delay: i * 0.06,
+    scrollTrigger: { trigger: row, start: 'top 90%', once: true }
+  });
+});
+
+document.querySelectorAll('.aud-row').forEach((row, i) => {
+  gsap.to(row, {
+    opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', delay: i * 0.07,
+    scrollTrigger: { trigger: row, start: 'top 88%', once: true }
+  });
+});
+
+/* ─── LANG TOGGLE ────────────────────────────────────── */
+document.getElementById('lang-toggle')?.addEventListener('click', () => {
+  localStorage.setItem('kx-lang', LANG === 'en' ? 'ru' : 'en');
+  location.reload();
+});
+</script>
+</body>
+</html>
