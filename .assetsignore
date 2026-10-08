@@ -1,0 +1,11 @@
+wrangler.jsonc
+.assetsignore
+.gitignore
+.git
+node_modules
+aigocy/assets/scss
+aigocy/README.md
+aigocy/assets/icon/icomoon/demo.html
+aigocy/assets/icon/icomoon/demo-files
+aigocy/assets/icon/icomoon/Read Me.txt
+aigocy/assets/css/styles.css.map
