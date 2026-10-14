@@ -54,6 +54,7 @@
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
+html,body{overflow-anchor:none}
 body{margin:0;background:var(--red);color:var(--fg);font:400 var(--t-body)/1.55 var(--f-body);font-synthesis:none;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 img{display:block;max-width:100%}
 a{color:inherit;text-decoration:none}
@@ -310,6 +311,8 @@ html.lenis,html.lenis body{height:auto}
 @media (max-width:700px){
   /* prevent iOS elastic overscroll from snapping sticky sections */
   body{overscroll-behavior-y:none}
+  /* shorter discover on mobile — each phase ~1 swipe instead of 1.3 */
+  .discover{height:240vh}
   /* parallax is disabled on mobile — no point keeping compositor layers */
   .media .px{will-change:auto}
   .footer__logo{will-change:auto}
@@ -693,7 +696,6 @@ function setPhase(key, el, on){
   else if (!on && prev === 'in') { el.classList.add('is-out'); el.classList.remove('is-in'); phaseState[key] = 'out'; }
 }
 let lastTheme = '';
-let sYSmooth = scrollY;              // ≤700px: my own fast lerp of scrollY — kills touch jitter without lenis.scroll lag
 function tickStepper(y){
   const sy = y - L.step;
   const g = easeInOutCubic(map(sy, 0, GROW()));
@@ -745,10 +747,9 @@ function tickSwipe(y){
   capWords.forEach((w, i) => w.style.opacity = prog > i / 3 - .001 && prog < (i + 1) / 3 + .02 ? 1 : .42);
 }
 function tick(time){
-  sYSmooth += (scrollY - sYSmooth) * 0.3;
-  // mobile uses our own fast lerp (kills iOS touch jitter + makes phase triggers responsive)
+  // mobile uses raw scrollY (zero lag → stage stays pinned, no iOS scroll-anchor fight)
   // desktop uses lenis.scroll (slow lerp = silky wheel smoothness)
-  const y = stepSwipe ? sYSmooth : (lenis ? lenis.scroll : scrollY);
+  const y = stepSwipe ? scrollY : (lenis ? lenis.scroll : scrollY);
 
   /* --- HERO: inset mask + fixed logo docking into header --- */
   const hp = easeOutQuart(map(y, 0, vh * .5));
