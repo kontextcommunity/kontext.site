@@ -86,8 +86,8 @@ html.is-dragging .wall{cursor:grabbing}
 .dot::before{content:"";position:absolute;left:50%;top:50%;z-index:5;width:min(6vw,90px);aspect-ratio:1;border-radius:50%;background:currentColor;transform:translate(-50%,-50%) scale(0);transition:transform .35s var(--ease-snap);pointer-events:none}
 @media (hover:hover){.dot:hover::before{transform:translate(-50%,-50%) scale(1)}}
 html.is-dragging .dot::before{transform:translate(-50%,-50%) scale(0)!important}
-.home__wm{position:fixed;left:var(--gut);bottom:calc(var(--gut) + 30px);z-index:100;pointer-events:none;color:var(--red)}
-.home__tags{position:fixed;right:var(--gut);bottom:calc(var(--gut) + 30px);z-index:100;display:flex;gap:18px;pointer-events:none}
+.home__wm{position:fixed;left:var(--gut);bottom:var(--gut);z-index:100;pointer-events:none;color:var(--red)}
+.home__tags{position:fixed;right:var(--gut);bottom:var(--gut);z-index:100;display:flex;gap:18px;pointer-events:none}
 .home__kit{position:fixed;left:50%;top:calc(var(--gut) + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:100;color:var(--red);font:600 11px/1 var(--f);letter-spacing:.14em;text-transform:uppercase;pointer-events:none}
 .home__nav{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:100;display:flex;flex-direction:column;align-items:center;gap:6px;list-style:none;padding:0;margin:0;pointer-events:none;color:var(--red)}
 .home__nav li{pointer-events:auto}
