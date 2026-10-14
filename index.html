@@ -645,6 +645,7 @@
       grid-template-rows: repeat(2, 1fr);
       gap: 1px;
       pointer-events: auto;
+      z-index: 20;
     }
     .itile {
       position: relative;
@@ -838,6 +839,68 @@
   :lang(ru) .quote-main    { letter-spacing: -0.02em; }
   :lang(ru) .process-text  { letter-spacing: -0.01em; line-height: 1.45; }
   :lang(ru) .svc-row-desc  { letter-spacing: -0.01em; }
+
+  /* ─── MOBILE RESPONSIVE ─────────────────────────────── */
+
+  /* Services: descriptions always visible on touch devices */
+  @media (pointer: coarse) {
+    .svc-row-desc { opacity: 1 !important; transform: translateY(0) !important; }
+    .svc-row:hover .svc-row-name { color: var(--white); }
+  }
+
+  /* ≤600px — all phones */
+  @media (max-width: 600px) {
+    /* Nav: hide decorative text, keep logo + lang button */
+    .nav-right > span { display: none; }
+
+    /* Intro tiles: 2 columns × 3 rows, pushed below 60px nav */
+    #intro-tiles {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      inset: 68px var(--g) var(--g);
+    }
+
+    /* Tiles: opaque (blocks wordmark bleed-through) + tighter padding */
+    .itile { background: var(--black) !important; padding: 12px 12px 10px; }
+
+    /* Wordmark: scale down and prevent wrapping */
+    .iwm-main { font-size: clamp(2rem, 7.5vw, 3.5rem); }
+    .iwm-sub { font-size: 9px; white-space: nowrap; }
+    .itile-label,
+    .itile--soon .itile-label { font-size: clamp(1rem, 4vw, 2rem); }
+    .itile--dsgn .itile-logo,
+    .itile--film .itile-logo,
+    .itile--stage .itile-logo { font-size: clamp(0.95rem, 3.8vw, 1.8rem); }
+
+    /* Hero: tighter top padding */
+    .hero-section { padding-top: 80px; padding-bottom: 60px; }
+
+    /* About: tighter spacing */
+    .about-section { padding: 3.5rem 0; }
+    .about-inner { gap: 2.5rem; }
+
+    /* Process: single column, no side borders */
+    .process-grid { grid-template-columns: 1fr; }
+    .process-step { padding: 1.8rem 0; border-right: none; }
+    .process-step:not(:first-child) { border-top: 1px solid var(--border); }
+    /* reset 2-col specific rules from 720px breakpoint */
+    .process-step:nth-child(2) { border-right: none; }
+    .process-step:nth-child(3) { border-top: 1px solid var(--border); }
+    .process-step:nth-child(4) { border-top: 1px solid var(--border); border-right: none; }
+  }
+
+  /* ≤480px — smallest phones */
+  @media (max-width: 480px) {
+    /* Quote: smaller minimum to prevent overflow */
+    .quote-main { font-size: clamp(2.2rem, 10.5vw, 13.5rem); }
+
+    /* Contact headline: prevent overflow on very small screens */
+    .contact-h2-line:nth-child(1) .contact-h2-inner { font-size: clamp(4rem, 22vw, 28rem); }
+    .contact-h2-line:nth-child(2) .contact-h2-inner { font-size: clamp(3.5rem, 19vw, 24rem); }
+
+    /* Footer: wrap on tiny screens */
+    .footer-wrap { flex-wrap: wrap; gap: 0.8rem; justify-content: center; }
+  }
   </style>
 </head>
 <body>

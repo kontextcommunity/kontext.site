@@ -285,6 +285,130 @@ a.ct-link:hover .ct-arrow{transform:translateX(4px)}
   color:var(--mid);margin-top:32px;
 }
 
+/* ─── WORKS ──────────────────────────────────────── */
+#works{
+  background:var(--bg);
+  padding:40px var(--mg) 56px;
+  border-bottom:1px solid var(--line);
+}
+.wk-header{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  padding-bottom:20px;
+  margin-bottom:28px;
+  border-bottom:1px solid var(--line);
+  flex-wrap:wrap;gap:12px;
+}
+.wk-label{
+  font-size:10px;font-weight:400;letter-spacing:0.2em;
+  color:var(--mid);
+}
+.wk-tabs{
+  display:flex;gap:3px;
+}
+.wk-tab{
+  font-family:var(--f);
+  font-size:10px;font-weight:700;letter-spacing:0.14em;
+  background:none;border:1px solid var(--line);
+  padding:5px 14px;cursor:pointer;
+  color:var(--ink);opacity:0.4;
+  transition:opacity 0.2s,border-color 0.2s,background 0.2s,color 0.2s;
+}
+.wk-tab.is-active,.wk-tab:hover{
+  opacity:1;border-color:var(--ink);
+  background:var(--ink);color:var(--bg);
+}
+.wk-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:2px;
+}
+/* ── Card ── */
+.wk-card{
+  display:block;
+  position:relative;
+  aspect-ratio:3/4;
+  background:#0b0606;
+  overflow:hidden;
+  cursor:pointer;
+  text-decoration:none;
+}
+.wk-card-bg{
+  position:absolute;inset:0;
+}
+.wk-card-bg img{
+  width:100%;height:100%;
+  object-fit:cover;
+  opacity:0.48;
+  filter:grayscale(0.1);
+  transition:transform 0.7s cubic-bezier(0.25,0.1,0.25,1),
+             opacity 0.38s;
+}
+.wk-card:hover .wk-card-bg img{
+  transform:scale(1.06);
+  opacity:0.68;
+}
+.wk-card-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(
+    to top,
+    rgba(11,6,6,0.97) 0%,
+    rgba(11,6,6,0.36) 46%,
+    rgba(11,6,6,0.04) 100%
+  );
+}
+.wk-card-body{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  padding:18px 20px 22px;
+}
+.wk-card-num{
+  font-size:9px;font-weight:400;letter-spacing:0.18em;
+  color:var(--red);margin-bottom:8px;
+}
+.wk-card-name{
+  font-size:clamp(1.8rem,3.2vw,2.6rem);
+  font-weight:800;letter-spacing:-0.03em;
+  line-height:0.88;color:#f6ecea;
+}
+.wk-card-type{
+  font-size:9px;font-weight:400;letter-spacing:0.15em;
+  color:rgba(246,236,234,0.32);
+  margin-top:7px;text-transform:uppercase;
+  transition:color 0.25s;
+}
+.wk-card:hover .wk-card-type{color:rgba(246,236,234,0.55)}
+.wk-card-cta{
+  display:flex;align-items:center;gap:7px;
+  font-size:10px;font-weight:700;letter-spacing:0.12em;
+  color:#f6ecea;
+  margin-top:13px;
+  opacity:0;
+  transform:translateY(7px);
+  transition:opacity 0.28s,transform 0.28s;
+}
+.wk-card:hover .wk-card-cta{opacity:1;transform:translateY(0)}
+.wk-cta-arrow{
+  color:var(--red);
+  display:inline-block;
+  transition:transform 0.2s;
+}
+.wk-card:hover .wk-cta-arrow{transform:translateX(4px)}
+/* ── progress loader line (the animated "preloader") ── */
+.wk-card::after{
+  content:'';
+  position:absolute;
+  bottom:0;left:0;
+  height:2px;width:0%;
+  background:var(--red);
+  transition:width 0.55s cubic-bezier(0.25,0.1,0.25,1);
+  z-index:2;
+}
+.wk-card:hover::after{width:100%}
+@media(max-width:560px){
+  .wk-grid{grid-template-columns:1fr 1fr}
+}
+
 /* ─── FOOTER ─────────────────────────────────────── */
 footer{
   background:var(--ink);color:rgba(255,255,255,0.45);
@@ -341,6 +465,23 @@ footer{
 :lang(ru) .ap-quote  { letter-spacing: -0.02em; }
 :lang(ru) .lg-desc   { letter-spacing: -0.01em; line-height: 1.45; }
 :lang(ru) .ct-body   { letter-spacing: -0.01em; line-height: 1.5; }
+
+/* ─── MOBILE ≤480px ──────────────────────────────────── */
+@media(max-width:480px){
+  /* Lightbox close btn: reset large left padding */
+  .lg-close { padding-left: var(--mg); }
+
+  /* Footer: allow wrapping on very small screens */
+  footer {
+    height: auto;
+    min-height: 40px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .ft-right { gap: 12px; }
+}
 </style>
 </head>
 <body>
@@ -357,6 +498,7 @@ footer{
   <ul class="nav-links">
     <li><a href="#approach" data-i18n="nav.approach">Approach</a></li>
     <li><a href="#lineage" data-i18n="nav.lineage">Lineage</a></li>
+    <li><a href="#works" data-i18n="nav.works">Works</a></li>
     <li><a href="#contact" data-i18n="nav.contact">Contact</a></li>
   </ul>
   <button id="lang-toggle">RU</button>
@@ -425,9 +567,39 @@ footer{
   <p class="lg-close rv" data-i18n="lg.close">We study the past so the work can be simple in the present.</p>
 </section>
 
+<!-- WORKS -->
+<section id="works">
+  <div class="wk-header">
+    <div class="wk-label rv" data-i18n="wk.label">03 — Works</div>
+    <div class="wk-tabs">
+      <button class="wk-tab is-active" data-i18n="wk.tab.presskit">Press Kit</button>
+    </div>
+  </div>
+  <div class="wk-grid">
+    <a href="kontext.dsgn.DJpresskits/Peak%20site/peak-site/index.html"
+       target="_blank" rel="noopener"
+       class="wk-card rv">
+      <div class="wk-card-bg">
+        <img src="kontext.dsgn.DJpresskits/Peak%20site/peak-site/assets/portrait.jpg"
+             alt="PEAK — Andrey Glotov">
+      </div>
+      <div class="wk-card-overlay"></div>
+      <div class="wk-card-body">
+        <div class="wk-card-num">01</div>
+        <div class="wk-card-name">PEAK</div>
+        <div class="wk-card-type" data-i18n="wk.card.type">DJ · Sound Designer</div>
+        <div class="wk-card-cta">
+          <span data-i18n="wk.card.open">Open</span>
+          <span class="wk-cta-arrow">→</span>
+        </div>
+      </div>
+    </a>
+  </div>
+</section>
+
 <!-- CONTACT -->
 <section id="contact">
-  <div class="ct-label rv" data-i18n="ct.label">03 — Contact</div>
+  <div class="ct-label rv" data-i18n="ct.label">04 — Contact</div>
   <h2 class="ct-headline">
     <span class="hl-line"><span class="hl-inner lw-target" data-i18n="ct.line1">Contacts.</span></span>
   </h2>
@@ -470,7 +642,7 @@ footer{
   const T = {
     en:{
       'loader.sub':'Graphic Design · Art Direction',
-      'nav.approach':'Approach','nav.lineage':'Lineage','nav.contact':'Contact',
+      'nav.approach':'Approach','nav.lineage':'Lineage','nav.works':'Works','nav.contact':'Contact',
       'hero.label':'kontext.dsgn — Graphic Design Studio',
       'hero.line1':'Context','hero.line2':'is the','hero.line3':'design.',
       'hero.sub':'An international creative company built around context design. Art direction, identity, motion, 3D, scenography, digital.',
@@ -491,14 +663,17 @@ footer{
       'lg.name4':'The Printed Page','lg.desc4':'Newspapers, posters, magazines. Hierarchy in one second.',
       'lg.name5':'The Culture of the Room','lg.desc5':'Clubs, stages, streets. Design lives where people are.',
       'lg.close':'We study the past so the work can be simple in the present.',
-      'ct.label':'03 — Contact','ct.line1':'Contacts.',
+      'wk.label':'03 — Works','wk.tab.presskit':'Press Kit',
+      'wk.card.type':'DJ · Sound Designer',
+      'wk.card.open':'Open',
+      'ct.label':'04 — Contact','ct.line1':'Contacts.',
       'ct.body':'Have a project, a room, a brand or an idea that needs the right context? Write to us. We answer every message personally.',
       'ct.location':'Based in Shanghai. Working worldwide.',
       'ft.back':'Back to top ↑',
     },
     ru:{
       'loader.sub':'Графический дизайн · Арт-дирекшн',
-      'nav.approach':'Подход','nav.lineage':'Источники','nav.contact':'Контакт',
+      'nav.approach':'Подход','nav.lineage':'Источники','nav.works':'Работы','nav.contact':'Контакт',
       'hero.label':'kontext.dsgn — студия графического дизайна',
       'hero.line1':'Контекст','hero.line2':'и есть','hero.line3':'дизайн.',
       'hero.sub':'Международная креативная студия, в основе которой — контекстный дизайн. Арт-дирекшн, айдентика, моушн, 3D, сценография, диджитал.',
@@ -519,7 +694,10 @@ footer{
       'lg.name4':'Печатная страница','lg.desc4':'Газеты, плакаты, журналы. Иерархия за одну секунду.',
       'lg.name5':'Культура пространства','lg.desc5':'Клубы, сцены, улица. Дизайн живёт там, где живут люди.',
       'lg.close':'Мы изучаем прошлое, чтобы в настоящем работа говорила сама за себя.',
-      'ct.label':'03 — Контакт','ct.line1':'Напишите.',
+      'wk.label':'03 — Работы','wk.tab.presskit':'Пресс-Кит',
+      'wk.card.type':'DJ · Саунд-дизайнер',
+      'wk.card.open':'Открыть',
+      'ct.label':'04 — Контакт','ct.line1':'Напишите.',
       'ct.body':'Есть проект, пространство, бренд или идея, которым нужен правильный контекст? Напишите. Отвечаем на каждое письмо лично.',
       'ct.location':'Базируемся в Шанхае. Работаем по всему миру.',
       'ft.back':'Наверх ↑',
@@ -870,6 +1048,41 @@ function buildGuides() {
       ln(svg, W-mg, first.t, mg, last.b, gc+'0.04)', 1, 0.5, '4,10');
     }
     ln(svg, 0, H*0.5, W, H*0.5, rc+'0.07)', 1, 0.5, '1,16');
+  })();
+
+  /* ═══════════════════════════════════════════════
+     WORKS
+  ═══════════════════════════════════════════════ */
+  (function() {
+    const sec  = document.getElementById('works');
+    if (!sec) return;
+    const svg  = mkSvg(sec);
+    const W    = sec.offsetWidth;
+    const H    = sec.offsetHeight;
+    const mg   = parseFloat(getComputedStyle(sec).paddingLeft);
+    const gc   = 'rgba(0,0,0,';
+    const rc   = 'rgba(192,21,42,';
+
+    ln(svg, mg,   0, mg,   H, gc+'0.12)', 1, 0.75);
+    ln(svg, W-mg, 0, W-mg, H, gc+'0.12)', 1, 0.75);
+
+    const hdr  = sec.querySelector('.wk-header');
+    const grid = sec.querySelector('.wk-grid');
+    if (hdr) {
+      const p = rel(hdr, sec);
+      ln(svg, 0, p.t, W, p.t, gc+'0.1)',  1, 0.75);
+      ln(svg, 0, p.b, W, p.b, gc+'0.1)',  1, 0.75);
+    }
+    if (grid) {
+      const cards = grid.querySelectorAll('.wk-card');
+      cards.forEach(card => {
+        const p = rel(card, sec);
+        ln(svg, p.r, p.t, p.r, p.b, gc+'0.07)', 1, 0.5);
+      });
+      const p = rel(grid, sec);
+      ln(svg, 0, p.b, W, p.b, gc+'0.08)', 1, 0.75);
+    }
+    ln(svg, 0, H*0.5, W, H*0.5, rc+'0.06)', 1, 0.5, '1,16');
   })();
 
   /* ═══════════════════════════════════════════════

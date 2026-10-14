@@ -13,3 +13,5 @@ ANIMATION_SPEC_CHECKPOINT.md
 KONTEXT_SITE_RULES.txt
 documentation/
 .wrangler/
+kontext.dsgn.DJpresskits/*/Images/
+kontext.dsgn.DJpresskits/*/*.zip

@@ -207,6 +207,33 @@ footer { border-top: 1px solid var(--dim); padding: 0 var(--mg); height: 44px; d
 :lang(ru) .dir-desc   { letter-spacing: -0.01em; }
 :lang(ru) .aud-why    { letter-spacing: -0.01em; }
 
+/* ─── MOBILE ─────────────────────────────────────────── */
+@media(max-width:600px){
+  /* Loader: prevent monospace lines from overflowing */
+  #loader { overflow: hidden; }
+  .ld-line { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Nav: collapse gap, hide secondary link */
+  .nav-right { gap: 0.8rem; }
+  .nav-right a:first-child { display: none; }
+
+  /* Director rows: hide inline italic comments */
+  .dir-desc { display: none; }
+
+  /* Headline: tighten font size */
+  .hl-inner { font-size: clamp(3rem, 13vw, 7rem); }
+
+  /* Footer: allow wrapping */
+  footer {
+    height: auto;
+    min-height: 44px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
 </style>
 </head>
 <body>
