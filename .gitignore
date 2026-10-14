@@ -15,3 +15,5 @@ documentation/
 .wrangler/
 kontext.dsgn.DJpresskits/*/Images/
 kontext.dsgn.DJpresskits/*/*.zip
+dsgn/plaksa/Images/
+*.zip

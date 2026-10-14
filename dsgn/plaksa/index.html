@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PLAKSA</title>
+<meta name="description" content="PLAKSA — open format DJ. Shanghai · Moscow. House, techno, hip-hop, R&B.">
+<meta name="theme-color" content="#0b0a0a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: one fixed nav + menu, five "pages" swapped by hash with a fade; home is an infinite drag wall. */
+/* ============ 1. TOKENS ============ */
+:root{
+  color-scheme:dark;
+  --ink:#0b0a0a;            /* press-kit black */
+  --red:#e31419;            /* press-kit red */
+  --paper:#f1ede8;
+  --pink:#ffb3c4;
+  --chrome:#cfcdd6;
+  --lilac:#d9c2ff;
+
+  --f:"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif;
+
+  --t-big:clamp(30px,4.03vw,58px);     /* one display size, used for whole paragraphs */
+  --t-small:clamp(15px,1.25vw,18px);
+  --t-label:11px;
+  --gut:15px;                           /* outer gutter */
+  --col:7.5px;                          /* half column gap */
+  --top:185px;                          /* page top offset (below nav) */
+
+  --ease-out-quart:cubic-bezier(.165,.84,.44,1);
+  --ease-snap:cubic-bezier(1,0,0,1);
+  --ease-in-out-quart:cubic-bezier(.76,0,.24,1);
+
+  --page-bg:var(--ink);
+  --page-fg:var(--red);
+  --btn-bg:var(--red);
+  --btn-bar:var(--ink);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;background:var(--ink)}
+body{margin:0;background:var(--page-bg);color:var(--page-fg);font:600 var(--t-small)/1.15 var(--f);letter-spacing:-.02em;-webkit-font-smoothing:antialiased;transition:background-color .4s linear,color .4s linear;overflow-x:hidden}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;letter-spacing:inherit}
+:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.label{font:600 var(--t-label)/1.3 var(--f);letter-spacing:.02em;text-transform:uppercase}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-stopped{overflow:hidden}
+
+/* wordmark: typeset, sized by JS to an exact width */
+.wm{font:800 100px/.74 var(--f);letter-spacing:-.065em;text-transform:uppercase;white-space:nowrap;display:block;padding-top:.04em}
+
+/* ============ 2. LOADER ============ */
+.loader{position:fixed;inset:0;z-index:300;background:var(--red);color:var(--ink);animation:swipeup 1.2s var(--ease-out-quart) 1.5s forwards}
+.loader .wm{position:fixed;left:var(--gut);bottom:var(--gut);animation:vanish 0s 1.5s forwards}
+.loader__count{position:absolute;right:var(--gut);top:calc(var(--gut) + 4px)}
+@keyframes swipeup{to{transform:translateY(-100%)}}
+@keyframes vanish{to{opacity:0}}
+
+/* ============ 3. NAV ============ */
+.nav{position:fixed;inset:0 0 auto;z-index:200;padding:calc(var(--gut) + env(safe-area-inset-top,0px)) max(var(--gut),env(safe-area-inset-right,0px)) 0 max(var(--gut),env(safe-area-inset-left,0px));display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
+.nav__brand{pointer-events:auto;position:relative;z-index:2;font:700 var(--t-small)/18px var(--f);letter-spacing:-.02em;text-transform:uppercase;transition:opacity .3s,visibility .3s}
+.nav__brand:hover{opacity:.7}
+body[data-page=home] .nav__brand{opacity:0;visibility:hidden}
+
+
+/* ============ 4. PAGES + TRANSITION ============ */
+.view{transition:opacity .4s linear}
+html.is-animating .view{opacity:0}
+.page{display:none}
+.page.is-active{display:block}
+
+/* ============ 5. HOME: infinite wall ============ */
+.page--home{height:100svh;overflow:hidden;position:relative}
+.wall{position:absolute;inset:0;overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
+html.is-dragging .wall{cursor:grabbing}
+.wall__inner{position:absolute;inset:0;transform:scale(1.15)}
+.tile{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;will-change:transform}
+.tile__btn{position:relative;display:flex;align-items:center;justify-content:center;cursor:zoom-in;color:var(--red)}
+.tile__btn img,.tile__btn video{height:100%;width:auto;object-fit:contain;opacity:0;transition:opacity .5s .5s;pointer-events:none;-webkit-user-drag:none}
+.tile__btn img.is-loaded,.tile__btn video.is-loaded{opacity:1}
+.dot::before{content:"";position:absolute;left:50%;top:50%;z-index:5;width:min(6vw,90px);aspect-ratio:1;border-radius:50%;background:currentColor;transform:translate(-50%,-50%) scale(0);transition:transform .35s var(--ease-snap);pointer-events:none}
+@media (hover:hover){.dot:hover::before{transform:translate(-50%,-50%) scale(1)}}
+html.is-dragging .dot::before{transform:translate(-50%,-50%) scale(0)!important}
+.home__wm{position:fixed;left:var(--gut);bottom:calc(var(--gut) + 30px);z-index:100;pointer-events:none;color:var(--red)}
+.home__tags{position:fixed;right:var(--gut);bottom:calc(var(--gut) + 30px);z-index:100;display:flex;gap:18px;pointer-events:none}
+.home__kit{position:fixed;left:50%;top:calc(var(--gut) + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:100;color:var(--red);font:600 11px/1 var(--f);letter-spacing:.14em;text-transform:uppercase;pointer-events:none}
+.home__nav{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:100;display:flex;flex-direction:column;align-items:center;gap:6px;list-style:none;padding:0;margin:0;pointer-events:none;color:var(--red)}
+.home__nav li{pointer-events:auto}
+.home__nav a{display:block;padding:6px 18px;min-width:150px;border:1px solid var(--red);color:var(--red);font:600 12px/1 var(--f);letter-spacing:.08em;text-transform:uppercase;text-align:center;transition:background-color .3s,color .3s}
+.home__nav a:hover,.home__nav a:focus-visible,.home__nav a[aria-current=page]{background:var(--red);color:var(--ink)}
+.home__nav sup{font-size:.7em;letter-spacing:0;vertical-align:top;margin-left:.15em;font-weight:600}
+
+/* ============ 6. LISTING (Identity) ============ */
+.listing{padding:var(--top) calc(var(--gut) - var(--col)) var(--top)}
+.listing__head{margin-left:50%;padding:0 var(--col);max-width:50%;margin-bottom:var(--top)}
+.listing__head p{margin:10px 0 0;max-width:38em}
+.listing__tags{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:22px}
+.listing__items{display:flex;flex-wrap:wrap;align-items:flex-start}
+.item{flex:0 0 16.6667%;max-width:16.6667%;padding:0 var(--col);margin-bottom:60px}
+.item--wide{flex-basis:33.3333%;max-width:33.3333%}
+.item__btn{display:block;width:100%;overflow:hidden;color:var(--red);position:relative}
+.item__btn img,.item__btn video{width:100%;height:auto;transform:scale(1.04);opacity:0;transition:opacity .5s .2s}
+.item__btn img.is-loaded,.item__btn video.is-loaded{opacity:1}
+.item__cap{display:block;margin-top:8px;opacity:.6}
+
+/* ============ 7. TEXT PAGES (Sound / Experience / Booking) ============ */
+.text{padding:var(--top) calc(var(--gut) - var(--col)) var(--top);display:flex;align-items:flex-start;min-height:100svh}
+.text__main{flex:0 0 50%;max-width:50%;padding:0 var(--col)}
+.text__side{flex:0 0 50%;max-width:50%;padding:0 var(--col) 0 calc(4.1667% + var(--col));position:sticky;top:var(--top)}
+.big{font:700 var(--t-big)/1 var(--f);letter-spacing:-.04em;margin:0 0 60px}
+.big:last-child{margin-bottom:0}
+.big a{text-decoration:underline;text-decoration-thickness:.06em;text-underline-offset:.1em}
+.big a:hover{opacity:.7}
+.big .dim{opacity:.45}
+h1.big{margin-bottom:60px}
+.side-block{margin:0 0 34px}
+.side-block .label{display:block;margin-bottom:8px;opacity:.7}
+.side-block p{margin:0}
+.side-photo{width:62%;margin:0 0 34px;overflow:hidden}
+.side-photo img{width:100%;transform:scale(1.04)}
+.rows{display:grid;grid-template-columns:auto 1fr;gap:10px 22px;margin:0}
+.rows dt{padding-top:3px}
+.rows dd{margin:0}
+.eras{display:grid;grid-template-columns:1fr 1fr;gap:var(--col) calc(2*var(--col));margin:0 0 60px}
+.eras .label{display:block;margin-bottom:12px;opacity:.7;letter-spacing:.02em}
+.eras ul{list-style:none;margin:0;padding:0;font:700 var(--t-big)/.95 var(--f);letter-spacing:-.04em}
+.copy{border-bottom:.06em solid currentColor}
+.copy:hover{opacity:.7}
+.toast{position:fixed;left:50%;bottom:calc(var(--gut) + 74px);transform:translate(-50%,20px);background:var(--ink);color:var(--paper);padding:10px 14px;opacity:0;transition:opacity .3s,transform .3s var(--ease-out-quart);z-index:250;pointer-events:none}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+/* page colour schemes (set on body by the router) */
+body[data-page=home]{--page-bg:var(--ink);--page-fg:var(--red);--btn-bg:var(--red);--btn-bar:var(--ink)}
+body[data-page=sound]{--page-bg:var(--red);--page-fg:var(--ink);--btn-bg:var(--ink);--btn-bar:var(--red)}
+body[data-page=identity]{--page-bg:var(--ink);--page-fg:var(--red);--btn-bg:var(--red);--btn-bar:var(--ink)}
+body[data-page=experience]{--page-bg:var(--ink);--page-fg:var(--red);--btn-bg:var(--red);--btn-bar:var(--ink)}
+body[data-page=booking]{--page-bg:var(--pink);--page-fg:var(--ink);--btn-bg:var(--ink);--btn-bar:var(--pink)}
+
+/* ============ 8. LIGHTBOX ============ */
+.lb{position:fixed;inset:0;z-index:250;background:var(--ink);color:var(--red);display:grid;grid-template-rows:1fr auto;opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s}
+.lb.is-open{opacity:1;visibility:visible}
+.lb__stage{position:relative;display:flex;align-items:center;justify-content:center;padding:90px var(--gut) 10px;min-height:0}
+.lb__stage img,.lb__stage video{max-width:100%;max-height:100%;object-fit:contain;transform:scale(.975) translateY(16px);opacity:0;transition:transform .45s var(--ease-out-quart),opacity .35s}
+.lb__stage img.is-hidden,.lb__stage video.is-hidden{display:none}
+.lb.is-open .lb__stage img.is-loaded,.lb.is-open .lb__stage video.is-loaded{transform:none;opacity:1}
+.lb__bar{display:flex;justify-content:space-between;gap:20px;padding:12px var(--gut) calc(var(--gut) + env(safe-area-inset-bottom,0px))}
+.lb__close{position:absolute;top:var(--gut);right:var(--gut);width:60px;height:60px;background:var(--red);z-index:2}
+.lb__close i{position:absolute;left:0;top:28px;width:60px;height:4px;background:var(--ink)}
+.lb__close i:first-child{transform:rotate(45deg)}
+.lb__close i:last-child{transform:rotate(-45deg)}
+.lb__nav{position:absolute;top:0;bottom:0;width:30%;z-index:1}
+.lb__nav--prev{left:0;cursor:w-resize}
+.lb__nav--next{right:0;cursor:e-resize}
+
+/* ============ 9. RESPONSIVE ============ */
+@media (max-width:900px){
+  :root{--top:150px}
+  .home__tags{display:none}
+  .home__nav{gap:5px}
+  .home__nav a{min-width:140px;padding:5px 16px;font-size:11px}
+  .listing__head{margin-left:0;max-width:none}
+  .item{flex-basis:50%;max-width:50%;margin-bottom:40px}
+  .item--wide{flex-basis:100%;max-width:100%}
+  .text{flex-direction:column}
+  .text__main,.text__side{flex-basis:auto;max-width:100%;position:relative;top:0;padding:0 var(--col)}
+  .text__side{margin-top:60px}
+  .big{margin-bottom:40px}
+  .side-photo{width:70%}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-delay:0s!important}
+}
+</style>
+</head>
+<body>
+<a class="sr" href="#main">Skip to content</a>
+
+<!-- LOADER -->
+<div class="loader" id="loader" aria-hidden="true">
+  <span class="loader__count label">Open format DJ · Shanghai · Moscow</span>
+  <span class="wm" data-fit="wm">PLAKSA</span>
+</div>
+
+<!-- NAV: just brand (shown on sub-pages only) -->
+<nav class="nav" aria-label="Main">
+  <a class="nav__brand" href="#home">PLAKSA</a>
+</nav>
+
+<main class="view" id="main">
+
+  <!-- HOME -->
+  <section class="page page--home" data-page="home" aria-label="PLAKSA — photographs">
+    <h1 class="sr">PLAKSA — open format DJ, Shanghai · Moscow</h1>
+    <div class="wall" id="wall"><div class="wall__inner" id="wallInner"></div></div>
+    <span class="home__wm wm" data-fit="wm" aria-hidden="true">PLAKSA</span>
+    <span class="home__kit" aria-hidden="true">Press Kit</span>
+    <ul class="home__nav" id="homeNav" aria-label="Pages">
+      <li><a href="#home" data-k="home">Home</a></li>
+      <li><a href="#sound" data-k="sound">The Sound</a></li>
+      <li><a href="#identity" data-k="identity">Identity</a></li>
+      <li><a href="#experience" data-k="experience">Experience<sup>100+</sup></a></li>
+      <li><a href="#booking" data-k="booking">Booking</a></li>
+    </ul>
+    <div class="home__tags label" aria-hidden="true"><span>(House)</span><span>(Techno)</span><span>(Hip-hop)</span><span>(R&amp;B)</span></div>
+  </section>
+
+  <!-- THE SOUND -->
+  <section class="page" data-page="sound">
+    <div class="text">
+      <div class="text__main">
+        <h1 class="big">The Sound.<br>Sensuality and control.</h1>
+        <p class="big">PLAKSA is a Shanghai-based DJ working the intersection of club and urban sounds. Her sets blur the lines between house, techno, hip-hop and R&amp;B, moving fluidly between them depending on what the room needs.</p>
+        <p class="big">The vibe is always energetic and sensual, never predictable. She builds tension through groove and drops through attitude rather than formula.</p>
+        <p class="big">PLAKSA’s sonic signature sits at the intersection of electronic precision and urban groove. Sets are built for the dancefloor: they move, they flex, they keep energy high without becoming predictable. Whether building through deep house into techno or pulling hip-hop references into a house moment, the throughline is always sensuality and control. No wasted moments. Every track serves the narrative of the night.</p>
+        <p class="big"><a href="#experience">Venue history</a></p>
+      </div>
+      <aside class="text__side">
+        <figure class="side-photo"><img src="assets/armchair-wide.jpg" alt="PLAKSA in a leather armchair" loading="lazy"></figure>
+        <div class="side-block"><span class="label">(Primary formats)</span><p>Open format<br>House<br>Techno<br>Hip-hop<br>R&amp;B</p></div>
+        <div class="side-block"><span class="label">(Set characteristics)</span><p>Club-oriented. Energetic.<br>Sexy. Playful.</p></div>
+        <div class="side-block"><span class="label">(The music adapts to the energy)</span><p>Open format, not the other way around.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- IDENTITY (listing) -->
+  <section class="page" data-page="identity">
+    <div class="listing">
+      <div class="listing__head">
+        <span class="label">(Visual DNA)</span>
+        <p>PLAKSA’s identity merges club culture with unapologetic femininity. The aesthetic is sexy without being decorative: playful but authoritative. It’s the confidence of someone who knows her room and moves the crowd with intention, not desperation. Her visual presentation mirrors her sonic approach: carefully curated, distinctively feminine, inherently clubby.</p>
+        <div class="listing__tags label"><span>(Y2K)</span><span>(Feminine)</span><span>(Sexy)</span><span>(Club-confident)</span></div>
+      </div>
+      <div class="listing__items" id="listItems"></div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section class="page" data-page="experience">
+    <div class="text">
+      <div class="text__main">
+        <h1 class="big">Venue history.</h1>
+        <div class="eras">
+          <div><span class="label">(Moscow era)</span><ul><li>BIZI</li><li>Ласки</li><li>Изи</li><li>Anima</li><li>Kultura</li></ul></div>
+          <div><span class="label">(Shanghai era)</span><ul><li>The Dome</li><li>Highline</li><li>Edition</li></ul></div>
+        </div>
+        <p class="big">100+ sets across Moscow &amp; Shanghai.</p>
+        <p class="big">Originally rooted in Moscow’s nightlife ecosystem, she’s logged 100+ sets across venues including BIZI, Ласки, Изи, Anima and Kultura before establishing herself as a key fixture in Shanghai’s electronic music landscape.</p>
+        <p class="big">PLAKSA represents the emerging generation of Shanghai DJs: internationally trained, genre-fluid, and focused on building atmosphere through selection rather than technical flash. She’s equally comfortable opening a room with deep grooves or closing it with club energy. What matters is the story, and her track record shows she knows how to tell one.</p>
+        <p class="big"><a href="#booking">Book PLAKSA</a></p>
+      </div>
+      <aside class="text__side">
+        <div class="side-block"><span class="label">(Experience metrics)</span></div>
+        <dl class="rows">
+          <dt class="label">(Years active)</dt><dd>Moscow foundation · Shanghai continuation</dd>
+          <dt class="label">(Primary markets)</dt><dd>Moscow · Shanghai</dd>
+          <dt class="label">(Career sets)</dt><dd>100+ performances</dd>
+          <dt class="label">(Room types)</dt><dd>Rooftop terraces · Club spaces · Intimate venues</dd>
+          <dt class="label">(Crowd capability)</dt><dd>200–1000+ capacity rooms</dd>
+          <dt class="label">(Set duration)</dt><dd>2–5 hours (adaptable to format)</dd>
+        </dl>
+        <figure class="side-photo" style="margin-top:40px"><img src="assets/armchair-bw.jpg" alt="PLAKSA, black and white portrait" loading="lazy"></figure>
+      </aside>
+    </div>
+  </section>
+
+  <!-- BOOKING -->
+  <section class="page" data-page="booking">
+    <div class="text">
+      <div class="text__main">
+        <h1 class="big">Booking &amp; presence.</h1>
+        <p class="big">
+          <a href="https://www.instagram.com/avenrok.k" target="_blank" rel="noopener noreferrer">@avenrok.k</a><br>
+          WeChat: <button class="copy" id="copyWechat" type="button">plaksa</button><br>
+          Shanghai, China
+        </p>
+        <p class="big"><span class="dim">Available for</span><br>Residencies · One-off sets · Festival slots · Private events · International bookings</p>
+        <p class="big">For promoters and venues: PLAKSA brings professional experience from Moscow’s nightlife establishment, proven crowd-reading skills, and a distinctive sound that doesn’t compete with other formats. She’s a room-filler in the truest sense.</p>
+      </div>
+      <aside class="text__side">
+        <div class="side-block"><span class="label">(Open format DJ)</span><p>Shanghai · Moscow</p></div>
+        <div class="side-block"><span class="label">(Instagram)</span><p>@avenrok.k</p></div>
+        <div class="side-block"><span class="label">(WeChat)</span><p>plaksa</p></div>
+        <div class="side-block"><span class="label">(Based in)</span><p>Shanghai, China</p></div>
+        <figure class="side-photo"><img src="assets/face-lean.jpg" alt="PLAKSA portrait" loading="lazy"></figure>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<!-- LIGHTBOX -->
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Photo" aria-hidden="true">
+  <div class="lb__stage"><button class="lb__nav lb__nav--prev" id="lbPrev" aria-label="Previous photo"></button><img id="lbImg" alt=""><video id="lbVid" class="is-hidden" muted loop playsinline></video><button class="lb__nav lb__nav--next" id="lbNext" aria-label="Next photo"></button></div>
+  <div class="lb__bar"><span id="lbCap"></span><span id="lbNum" style="font-variant-numeric:tabular-nums"></span></div>
+  <button class="lb__close" id="lbClose" aria-label="Close"><i></i><i></i></button>
+</div>
+<div class="toast" id="toast">Copied: plaksa</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(() => {
+/* ================= DATA (press kit) ================= */
+const PHOTOS = [
+  { src: 'w-01', w: 1280, h: 1600, cap: 'PLAKSA — open format DJ · Shanghai · Moscow' },
+  { src: 'w-02', w: 1280, h: 1600, cap: 'Sensuality and control' },
+  { src: 'w-03', w: 1280, h: 1600, cap: 'Club-confident' },
+  { src: 'w-04', w: 1600, h: 1280, cap: 'The music adapts to the energy' },
+  { src: 'w-05', w: 1600, h: 1280, cap: 'Visual DNA — Y2K, feminine' },
+  { src: 'w-06', w: 1600, h: 1280, cap: 'Club-oriented. Energetic.' },
+  { src: 'w-07', w: 1280, h: 1600, cap: 'Carefully curated, distinctively feminine' },
+  { src: 'w-08', w: 1280, h: 1600, cap: 'Tension through groove' },
+  { src: 'w-09', w: 1280, h: 1600, cap: 'Every track serves the narrative of the night' },
+  { src: 'w-10', w: 720,  h: 960,  cap: 'Shanghai · Moscow', video: true },
+  { src: 'w-11', w: 720,  h: 960,  cap: 'Drops through attitude', video: true },
+  { src: 'w-12', w: 1600, h: 1082, cap: 'Inherently clubby' },
+  { src: 'w-13', w: 1600, h: 1082, cap: 'Sexy. Playful.' }
+];
+const src = p => `assets/${p.src}.${p.video ? 'mp4' : 'jpg'}`;
+const mediaTag = (p, extra = '') => p.video
+  ? `<video src="${src(p)}" muted loop playsinline autoplay preload="auto" ${extra}></video>`
+  : `<img src="${src(p)}" alt="" draggable="false" loading="lazy" ${extra}>`;
+
+/* ================= HELPERS ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const lerp = (a, b, t) => a + (b - a) * t;
+const mod = (n, m) => ((n % m) + m) % m;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const rand = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();   // seeded: same wall every load
+const markLoaded = el => {
+  const on = () => el.classList.add('is-loaded');
+  if (el.tagName === 'VIDEO') {
+    if (el.readyState >= 2) on(); else el.addEventListener('loadeddata', on, { once: true });
+  } else {
+    el.complete && el.naturalWidth ? on() : el.addEventListener('load', on, { once: true });
+  }
+};
+
+/* ================= WORDMARK FIT ================= */
+// every .wm is sized so the word spans exactly the target width (50% of the viewport on desktop, full width on phones)
+function fitWordmarks(){
+  const target = innerWidth > 900 ? innerWidth * .5 - 22 : innerWidth - 30;
+  $$('[data-fit=wm]').forEach(el => {
+    el.style.fontSize = '100px';
+    const w = el.getBoundingClientRect().width || 1;
+    el.style.fontSize = (100 * target / w) + 'px';
+  });
+}
+
+/* ================= SMOOTH SCROLL (text pages only) ================= */
+const lenis = (!reduced && window.Lenis) ? new Lenis({ lerp: 0.1, smoothWheel: true, syncTouch: false }) : null;
+
+/* ================= HOME: INFINITE WALL ================= */
+const wall = $('#wall'), inner = $('#wallInner');
+let C, COLS, ROWS, W, H, tiles = [];
+const cam = { x: 0, y: 0, tx: 0, ty: 0, vx: 0, vy: 0 };
+const DRIFT = { x: 30, y: -30 };                       // px per second, idle
+function buildWall(){
+  const vw = innerWidth, vh = innerHeight;
+  C = vw > 900 ? vw / 3 : vw * .62;                    // cell size
+  COLS = Math.max(6, Math.ceil(vw / C) + 3);
+  ROWS = Math.max(4, Math.ceil(vh / C) + 3);
+  W = COLS * C; H = ROWS * C;
+  inner.innerHTML = '';
+  tiles = [];
+  const pad = vw > 900 ? vw * .03 : vw * .05;
+  // Build order so no cell shares a photo with any of its 8 neighbours on the torus.
+  // Among allowed photos, prefer the least-used so the N photos distribute evenly across COLS*ROWS cells.
+  const grid = new Array(COLS * ROWS).fill(-1);
+  const used = new Array(PHOTOS.length).fill(0);
+  const idx = (c, r) => c * ROWS + r;
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
+    const forbidden = new Set();
+    for (let dc = -1; dc <= 1; dc++) for (let dr = -1; dr <= 1; dr++) {
+      if (!dc && !dr) continue;
+      const nk = grid[idx(((c + dc) % COLS + COLS) % COLS, ((r + dr) % ROWS + ROWS) % ROWS)];
+      if (nk >= 0) forbidden.add(nk);
+    }
+    let avail = PHOTOS.map((_, i) => i).filter(i => !forbidden.has(i));
+    if (!avail.length) avail = PHOTOS.map((_, i) => i);   // fallback: never reached when PHOTOS.length > 8
+    const min = Math.min(...avail.map(i => used[i]));
+    const pool = avail.filter(i => used[i] === min);
+    const pick = pool[Math.floor(rand() * pool.length)];
+    used[pick]++;
+    grid[idx(c, r)] = pick;
+  }
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
+    const i = grid[idx(c, r)], p = PHOTOS[i];
+    const el = document.createElement('div');
+    el.className = 'tile';
+    el.style.width = el.style.height = C + 'px';
+    el.style.padding = pad + 'px';
+    const box = C - 2 * pad, ratio = p.w / p.h;
+    const bw = ratio >= 1 ? box : box * ratio, bh = ratio >= 1 ? box / ratio : box;
+    el.innerHTML = `<button class="tile__btn dot" type="button" data-i="${i}" style="width:${bw}px;height:${bh}px" aria-label="Open photo: ${p.cap}">${mediaTag(p)}</button>`;
+    inner.appendChild(el);
+    markLoaded(el.querySelector('img,video'));
+    tiles.push({ el, bx: c * C + (rand() - .5) * 24, by: r * C + (c % 2 ? C * .3 : 0) + (rand() - .5) * 24 });
+  }
+}
+function renderWall(){
+  for (const t of tiles) {
+    const x = mod(t.bx + cam.x, W) - C, y = mod(t.by + cam.y, H) - C;
+    t.el.style.transform = `translate3d(${x}px,${y}px,0)`;
+  }
+}
+// input: wheel, drag with inertia, click-vs-drag
+let drag = null;
+wall.addEventListener('wheel', e => { e.preventDefault(); cam.tx -= e.deltaX; cam.ty -= e.deltaY; }, { passive: false });
+wall.addEventListener('pointerdown', e => {
+  drag = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, t: performance.now(), moved: 0 };
+  wall.setPointerCapture(e.pointerId);
+});
+wall.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.lx, dy = e.clientY - drag.ly, now = performance.now(), dt = Math.max(1, now - drag.t);
+  cam.tx += dx / 1.15; cam.ty += dy / 1.15;                 // divide by the wall scale so the photo stays under the finger
+  cam.vx = dx / dt * 16; cam.vy = dy / dt * 16;
+  drag.lx = e.clientX; drag.ly = e.clientY; drag.t = now;
+  drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.x, e.clientY - drag.y));
+  if (drag.moved > 6) document.documentElement.classList.add('is-dragging');
+});
+const endDrag = e => {
+  if (!drag) return;
+  const wasClick = drag.moved <= 6;
+  document.documentElement.classList.remove('is-dragging');
+  if (!wasClick) { drag.inertia = true; }
+  else {
+    const hit = document.elementFromPoint(e.clientX, e.clientY);
+    const b = hit && hit.closest('.tile__btn');
+    if (b) openLb(+b.dataset.i);
+  }
+  drag = null;
+};
+wall.addEventListener('pointerup', endDrag);
+wall.addEventListener('pointercancel', endDrag);
+wall.addEventListener('keydown', e => { const b = e.target.closest('.tile__btn'); if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openLb(+b.dataset.i); } });
+
+/* ================= LISTING ================= */
+$('#listItems').innerHTML = PHOTOS.map((p, i) => `<div class="item${p.w > p.h * 1.1 ? ' item--wide' : ''}"><button class="item__btn dot" type="button" data-i="${i}" aria-label="Open photo: ${p.cap}">${mediaTag(p, `width="${p.w}" height="${p.h}"`)}</button></div>`).join('');
+$$('#listItems img, #listItems video').forEach(markLoaded);
+$('#listItems').addEventListener('click', e => { const b = e.target.closest('.item__btn'); if (b) openLb(+b.dataset.i); });
+
+/* ================= LIGHTBOX ================= */
+const lb = $('#lb'), lbImg = $('#lbImg'), lbVid = $('#lbVid'), lbCap = $('#lbCap'), lbNum = $('#lbNum');
+let lbI = 0, lastFocus = null;
+function showLb(i){
+  lbI = mod(i, PHOTOS.length);
+  const p = PHOTOS[lbI];
+  lbImg.classList.remove('is-loaded'); lbVid.classList.remove('is-loaded');
+  if (p.video) {
+    lbImg.classList.add('is-hidden'); lbVid.classList.remove('is-hidden');
+    lbVid.src = src(p);
+    lbVid.onloadeddata = () => lbVid.classList.add('is-loaded');
+    lbVid.play().catch(() => {});
+  } else {
+    lbVid.classList.add('is-hidden'); lbImg.classList.remove('is-hidden');
+    lbVid.pause(); lbVid.removeAttribute('src'); lbVid.load();
+    lbImg.onload = () => lbImg.classList.add('is-loaded');
+    lbImg.src = src(p); lbImg.alt = p.cap;
+    if (lbImg.complete && lbImg.naturalWidth) lbImg.classList.add('is-loaded');
+  }
+  lbCap.textContent = p.cap;
+  lbNum.textContent = String(lbI + 1).padStart(2, '0') + ' / ' + String(PHOTOS.length).padStart(2, '0');
+}
+function openLb(i){ lastFocus = document.activeElement; showLb(i); lb.classList.add('is-open'); lb.setAttribute('aria-hidden', 'false'); lenis && lenis.stop(); $('#lbClose').focus(); }
+function closeLb(){ lb.classList.remove('is-open'); lb.setAttribute('aria-hidden', 'true'); if (current !== 'home') lenis && lenis.start(); lastFocus && lastFocus.focus && lastFocus.focus(); }
+$('#lbClose').addEventListener('click', closeLb);
+$('#lbPrev').addEventListener('click', () => showLb(lbI - 1));
+$('#lbNext').addEventListener('click', () => showLb(lbI + 1));
+addEventListener('keydown', e => {
+  if (lb.classList.contains('is-open')) {
+    if (e.key === 'Escape') closeLb();
+    if (e.key === 'ArrowLeft') showLb(lbI - 1);
+    if (e.key === 'ArrowRight') showLb(lbI + 1);
+  }
+});
+
+const body = document.body;
+
+/* ================= ROUTER (hash pages + fade) ================= */
+const PAGES = ['home', 'sound', 'identity', 'experience', 'booking'];
+let current = null;
+function apply(k){
+  $$('.page').forEach(p => p.classList.toggle('is-active', p.dataset.page === k));
+  body.dataset.page = k;
+  $$('#homeNav a').forEach(a => a.dataset.k === k ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
+  current = k;
+  scrollTo(0, 0); lenis && lenis.scrollTo(0, { immediate: true });
+  if (k === 'home') { lenis && lenis.stop(); document.documentElement.style.overflow = 'hidden'; }
+  else { document.documentElement.style.overflow = ''; lenis && lenis.start(); }
+  fitWordmarks();
+}
+function route(){
+  const k = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+  if (k === current) return;
+  if (current === null || reduced) { apply(k); return; }
+  document.documentElement.classList.add('is-animating');
+  setTimeout(() => { apply(k); requestAnimationFrame(() => document.documentElement.classList.remove('is-animating')); }, 400);
+}
+addEventListener('hashchange', route);
+
+/* ================= COPY WECHAT ================= */
+const toast = $('#toast');
+$('#copyWechat').addEventListener('click', () => {
+  const done = () => { toast.classList.add('is-on'); setTimeout(() => toast.classList.remove('is-on'), 1600); };
+  const fallback = () => { const r = document.createRange(); r.selectNodeContents($('#copyWechat')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+  try { navigator.clipboard.writeText('plaksa').then(done, fallback); } catch (e) { fallback(); }
+});
+
+/* ================= TILT (mobile) ================= */
+// Device orientation drives the wall: tilt the phone and photos drift that way.
+// iOS 13+ needs explicit permission on a user gesture; Android grants it silently.
+const tilt = { b: 0, g: 0, baseB: null, active: false };
+function tiltHandler(e){
+  if (tilt.baseB === null && e.beta !== null) tilt.baseB = e.beta;   // first reading = rest pose
+  tilt.b = (e.beta || 0) - (tilt.baseB || 0);
+  tilt.g = e.gamma || 0;
+  tilt.active = true;
+}
+function initTilt(){
+  if (typeof DeviceOrientationEvent === 'undefined') return;
+  const attach = () => addEventListener('deviceorientation', tiltHandler, true);
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    const once = () => {
+      removeEventListener('touchend', once); removeEventListener('click', once);
+      DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') attach(); }).catch(() => {});
+    };
+    addEventListener('touchend', once, { passive: true });
+    addEventListener('click', once);
+  } else attach();
+}
+if (innerWidth <= 900 && !reduced) initTilt();
+
+/* ================= LOOP ================= */
+let last = performance.now();
+function raf(t){
+  const dt = Math.min(.05, (t - last) / 1000); last = t;
+  lenis && lenis.raf(t);
+  if (current === 'home' && !lb.classList.contains('is-open')) {
+    if (!reduced && !drag) { cam.tx += DRIFT.x * dt; cam.ty += DRIFT.y * dt; }
+    if (tilt.active && !drag) {
+      // dead zone 4° to kill jitter; multiplier tuned so a 20° tilt ~ 70 px/s
+      const dz = v => Math.abs(v) > 4 ? v - Math.sign(v) * 4 : 0;
+      cam.tx += dz(tilt.g) * 4 * dt;
+      cam.ty += dz(tilt.b) * 4 * dt;
+    }
+    if (!drag && (Math.abs(cam.vx) > .05 || Math.abs(cam.vy) > .05)) { cam.tx += cam.vx; cam.ty += cam.vy; cam.vx *= .92; cam.vy *= .92; }
+    cam.x = lerp(cam.x, cam.tx, .1); cam.y = lerp(cam.y, cam.ty, .1);
+    renderWall();
+  }
+  requestAnimationFrame(raf);
+}
+
+/* ================= BOOT ================= */
+buildWall(); renderWall();
+route();
+fitWordmarks();
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(fitWordmarks);
+let rT; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { buildWall(); renderWall(); fitWordmarks(); }, 150); });
+requestAnimationFrame(raf);
+const loader = $('#loader');
+if (reduced) loader.remove(); else loader.addEventListener('animationend', e => { if (e.animationName === 'swipeup') loader.remove(); });
+})();
+</script>
+
+</body>
+</html>
