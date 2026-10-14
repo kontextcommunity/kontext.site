@@ -581,7 +581,7 @@ grid.innerHTML = cells.join('');
 /* ================= SMOOTH SCROLL ================= */
 let lenis = null;
 if (!reduced && window.Lenis) {
-  lenis = new Lenis({ lerp: 0.075, wheelMultiplier: 1, smoothWheel: true, syncTouch: true, touchMultiplier: 0.62 });
+  lenis = new Lenis({ lerp: 0.075, wheelMultiplier: 1, smoothWheel: true, syncTouch: false });
 }
 const scrollTo = (target) => {
   const el = typeof target === 'string' ? $(target) : target;
