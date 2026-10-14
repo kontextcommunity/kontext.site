@@ -196,8 +196,8 @@ html.lenis,html.lenis body{height:auto}
 .stepper.is-swipe .panel__img{inset:0 -15%}
 .stepper.is-swipe .panel__copy{bottom:calc(var(--gutter) + 2vh + 1.05 * clamp(52px,15.5vw,84px) + 40px)}
 .stepper.is-swipe .stepper__dots{display:flex;flex-direction:row;top:auto;left:var(--gutter);bottom:calc(var(--gutter) + 2vh + 1.05 * clamp(52px,15.5vw,84px) + 14px);transform:none}
-/* fixed instead of sticky — CSS sticky is unreliable on iOS Safari; JS controls visibility */
-.stepper.is-swipe .stepper__stage{position:fixed;pointer-events:none;visibility:hidden}
+/* JS-simulated sticky — CSS sticky is unreliable on iOS Safari (overflow-x:hidden on body breaks it) */
+.stepper.is-swipe .stepper__stage{position:absolute;left:0;right:0;will-change:transform}
 
 /* ============ 7. LARGE TITLE ============ */
 .ltitle{padding:clamp(80px,12vh,140px) var(--gutter) clamp(50px,7vh,80px);text-align:center}
@@ -722,8 +722,8 @@ function tickStepper(y){
 }
 function tickSwipe(y){
   const sy = y - L.step;
-  // show the fixed stage only while scrolling through the stepper; hide before/after
-  stepStage.style.visibility = (sy > -50 && sy < L.stepH + 50) ? 'visible' : 'hidden';
+  // JS-simulated sticky: top=0 (before entry) → tracks scroll inside stepper → clamps at bottom
+  stepStage.style.transform = `translate3d(0,${Math.max(0, Math.min(L.stepH - vh, sy))}px,0)`;
   if (sy < -vh || sy > L.stepH) return;                          // off-screen: skip
   const n = panels.length, W = vw;
   // pos: −1 = head screen, 0…n−1 = chapter on screen. Each flip moves during the first 70% of its distance, then holds.
