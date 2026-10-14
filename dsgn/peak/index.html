@@ -623,7 +623,7 @@ const themed = $$('[data-header]');
 let L = {};
 const GROW = () => vh * 1.1;         // scroll distance for the grow phase
 const WIPE = () => vh * 0.9;         // scroll distance per panel wipe
-const FLIP = () => vh * 0.8;         // ≤700px: scroll distance per horizontal flip (70% move + 30% hold)
+const FLIP = () => vh * (vw <= 700 ? 1.5 : 0.8); // ≤700px: heavier flip — 1.5× vh so a single swipe can't skip panels
 let stepSwipe = false;               // ≤700px: timeline flips full-screen chapters horizontally on vertical scroll
 function measure(){
   vw = innerWidth; vh = innerHeight;
@@ -763,7 +763,7 @@ function tick(time){
   setPhase('t3', discPhases[2], dp >= .74);
 
   /* --- STEPPER: grow → horizontal wipes → release (≤700px: pinned horizontal flips, see tickSwipe) --- */
-  if (stepSwipe) tickSwipe(y); else tickStepper(y);
+  if (stepSwipe) tickSwipe(scrollY); else tickStepper(y); // scrollY bypasses lenis.scroll lag on touch
 
   /* --- DIPTYCH / media parallax (scrubbed, ±6%, skipped on mobile) --- */
   if (!stepSwipe) pxMedia.forEach((p, i) => {
