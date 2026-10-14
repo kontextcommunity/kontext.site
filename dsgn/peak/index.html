@@ -304,6 +304,19 @@ html.lenis,html.lenis body{height:auto}
   .stepper__cap{font-size:clamp(52px,15.5vw,84px)}
 }
 
+/* ============ 13b. MOBILE PERFORMANCE ============ */
+@media (max-width:700px){
+  /* prevent iOS elastic overscroll from snapping sticky sections */
+  body{overscroll-behavior-y:none}
+  /* parallax is disabled on mobile — no point keeping compositor layers */
+  .media .px{will-change:auto}
+  .footer__logo{will-change:auto}
+  /* stepper cap scroll is still needed, but hero parallax is not */
+  .hero__media{will-change:auto}
+  /* keep panel__img for the swipe animation, but tone down */
+  .panel__img{backface-visibility:hidden}
+}
+
 /* ============ 14. REDUCED MOTION ============ */
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{transition-duration:.01ms!important;animation:none!important}
@@ -568,7 +581,7 @@ grid.innerHTML = cells.join('');
 /* ================= SMOOTH SCROLL ================= */
 let lenis = null;
 if (!reduced && window.Lenis) {
-  lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 1, smoothWheel: true, syncTouch: false });
+  lenis = new Lenis({ lerp: 0.075, wheelMultiplier: 1, smoothWheel: true, syncTouch: true, touchMultiplier: 0.62 });
 }
 const scrollTo = (target) => {
   const el = typeof target === 'string' ? $(target) : target;
@@ -634,13 +647,13 @@ function measure(){
 
 /* ================= SPHERE (canvas 2D, original) ================= */
 const cv = $('#sphere'), ctx = cv.getContext('2d');
-const N = innerWidth < 700 ? 1400 : 2600, pts = [];
+const N = innerWidth < 700 ? 260 : 2200, pts = [];
 for (let i = 0; i < N; i++) {           // fibonacci sphere
   const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = Math.PI * (3 - Math.sqrt(5)) * i;
   pts.push([Math.cos(th) * r, y, Math.sin(th) * r]);
 }
 let dpr = 1;
-function sizeCanvas(){ dpr = Math.min(2, devicePixelRatio || 1); cv.width = vw * dpr; cv.height = vh * dpr; }
+function sizeCanvas(){ dpr = Math.min(vw < 700 ? 1 : 2, devicePixelRatio || 1); cv.width = vw * dpr; cv.height = vh * dpr; }
 const DOT = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();   // sphere dots = --fg token
 function drawSphere(p, time){
   ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -752,20 +765,22 @@ function tick(time){
   /* --- STEPPER: grow → horizontal wipes → release (≤700px: pinned horizontal flips, see tickSwipe) --- */
   if (stepSwipe) tickSwipe(y); else tickStepper(y);
 
-  /* --- DIPTYCH / media parallax (scrubbed, ±6%) --- */
-  pxMedia.forEach((p, i) => {
+  /* --- DIPTYCH / media parallax (scrubbed, ±6%, skipped on mobile) --- */
+  if (!stepSwipe) pxMedia.forEach((p, i) => {
     const m = L.px[i]; const t = map(y, m.top - vh, m.top + m.h);
     p.style.transform = `translate3d(0,${lerp(-5, 5, t)}%,0)`;
   });
 
   /* --- QUOTE: each line splits apart as it crosses the viewport --- */
-  const amp = Math.min(vw * .2, 300);
-  qlines.forEach((l, i) => {
-    const m = L.q[i]; const t = map(y + vh, m.top + m.h * .5, m.top + m.h * .5 + vh);   // 0 at bottom edge → 1 at top edge
-    const k = Math.sin(t * Math.PI) ** 2 * (i % 2 ? 1 : .8);
-    l.children[0].style.transform = `translate3d(${-amp * k}px,0,0)`;
-    l.children[1].style.transform = `translate3d(${amp * k * .85}px,0,0)`;
-  });
+  if (L.q.length && y + vh > L.q[0].top - 100 && y < L.q[L.q.length-1].top + L.q[L.q.length-1].h + 100) {
+    const amp = Math.min(vw * .2, 300);
+    qlines.forEach((l, i) => {
+      const m = L.q[i]; const t = map(y + vh, m.top + m.h * .5, m.top + m.h * .5 + vh);   // 0 at bottom edge → 1 at top edge
+      const k = Math.sin(t * Math.PI) ** 2 * (i % 2 ? 1 : .8);
+      l.children[0].style.transform = `translate3d(${-amp * k}px,0,0)`;
+      l.children[1].style.transform = `translate3d(${amp * k * .85}px,0,0)`;
+    });
+  }
 
   /* --- FOOTER: logo rises out of the floor --- */
   const fp = easeOutQuart(map(y + vh, L.footer + vh * .2, L.footer + footer.offsetHeight));
