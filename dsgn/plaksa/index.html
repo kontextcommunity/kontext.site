@@ -335,10 +335,17 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const mod = (n, m) => ((n % m) + m) % m;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rand = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();   // seeded: same wall every load
+// Pause videos that scroll off-screen, resume when visible. Fixes iOS throttling
+// when many video tiles are mounted at once and gives autoplay a second chance.
+const vidObs = (typeof IntersectionObserver !== 'undefined') ? new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.play().catch(() => {}); else e.target.pause(); });
+}, { threshold: 0.01 }) : null;
 const markLoaded = el => {
   const on = () => el.classList.add('is-loaded');
   if (el.tagName === 'VIDEO') {
-    if (el.readyState >= 2) on(); else el.addEventListener('loadeddata', on, { once: true });
+    const start = () => { on(); el.play().catch(() => {}); };
+    if (el.readyState >= 2) start(); else el.addEventListener('loadeddata', start, { once: true });
+    if (vidObs) vidObs.observe(el);
   } else {
     el.complete && el.naturalWidth ? on() : el.addEventListener('load', on, { once: true });
   }
