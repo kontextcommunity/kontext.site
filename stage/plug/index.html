@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>kontext.stage</title>
+<meta name="description" content="kontext.stage — a chat panel inside TouchDesigner. Claude Code, Codex or any API model builds, checks and ships your network.">
+<meta name="theme-color" content="#f1ede6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: editorial grotesk on cream; sections switch colour (cream / gray / red / ink); live TouchDesigner-style canvases instead of photos. */
+/* ============ 1. TOKENS ============ */
+:root{
+  color-scheme:light;
+  --cream:#f1ede6;
+  --ink:#0d0d0c;
+  --gray:#c9c6bf;
+  --red:#e2231a;
+  --panel:#1c1c1b;            /* TouchDesigner-like UI grey */
+  --panel-2:#2a2a28;
+  --line:rgba(13,13,12,.16);
+
+  --f:"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  --t-hero:130px;                         /* overwritten by JS fit */
+  --t-h:clamp(44px,8.4vw,128px);
+  --t-m:clamp(20px,1.9vw,30px);
+  --t-b:clamp(15px,1.12vw,17px);
+  --t-s:13px;
+  --t-xs:11px;
+
+  --pad:10px;
+  --gap:20px;
+  --sec:clamp(90px,12vw,180px);
+
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-io:cubic-bezier(.77,0,.18,1);
+  --ease-drop:cubic-bezier(.55,0,.75,.2);
+
+  --bg:var(--cream);
+  --fg:var(--ink);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;background:var(--cream)}
+body{margin:0;background:var(--cream);color:var(--ink);font:500 var(--t-b)/1.35 var(--f);letter-spacing:-.01em;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img,canvas{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;letter-spacing:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+code,.mono{font-family:var(--mono);font-size:.92em;letter-spacing:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-stopped{overflow:hidden}
+
+.wrap{padding-left:max(var(--pad),env(safe-area-inset-left,0px));padding-right:max(var(--pad),env(safe-area-inset-right,0px))}
+.sec{position:relative;background:var(--bg);color:var(--fg)}
+.sec--gray{--bg:var(--gray)}
+.sec--red{--bg:var(--red);--fg:var(--ink)}
+.sec--ink{--bg:var(--ink);--fg:var(--cream)}
+.label{font:500 var(--t-xs)/1.2 var(--f);text-transform:uppercase;letter-spacing:.04em;display:inline-flex;align-items:center;gap:6px}
+.label::before{content:"";width:7px;height:7px;background:currentColor}
+.sec-top{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);padding:14px 0 0;align-items:start}
+.sec-top p{margin:0;max-width:34em;font-size:var(--t-s);line-height:1.35}
+
+/* reveal: masked lines (triggered) */
+.ln{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
+.ln>span{display:inline-block;transform:translateY(102%);transition:transform 1s var(--ease-out)}
+.is-in .ln>span{transform:none}
+.is-in .ln:nth-child(2)>span{transition-delay:.07s}
+.is-in .ln:nth-child(3)>span{transition-delay:.14s}
+.is-in .ln:nth-child(4)>span{transition-delay:.21s}
+.fade{opacity:0;transform:translateY(14px);transition:opacity .8s var(--ease-out),transform .8s var(--ease-out)}
+.is-in .fade,.fade.is-in{opacity:1;transform:none}
+
+/* boxed button (outline cells) */
+.cells{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid currentColor}
+.cell{display:flex;align-items:center;justify-content:center;min-height:86px;padding:16px;border-right:1px solid currentColor;font:500 var(--t-s)/1.2 var(--f);text-transform:uppercase;letter-spacing:.04em;position:relative;overflow:hidden;isolation:isolate;transition:color .5s var(--ease-out)}
+.cell:last-child{border-right:0}
+.cell::before{content:"";position:absolute;inset:0;background:var(--fg);transform:translateY(101%);transition:transform .5s var(--ease-out);z-index:-1}
+.cell:hover{color:var(--bg)}
+.cell:hover::before{transform:none}
+
+/* ============ 2. NAV + CURSOR ============ */
+.nav{position:fixed;inset:0 0 auto;z-index:60;display:flex;justify-content:space-between;align-items:center;padding:8px max(var(--pad),env(safe-area-inset-right,0px)) 0 max(var(--pad),env(safe-area-inset-left,0px));color:#fff;mix-blend-mode:difference;transform:translateY(-120%);transition:transform .9s var(--ease-out)}
+.nav.is-in{transform:none}
+.nav__mark{font:700 17px/1 var(--f);letter-spacing:-.04em}
+.nav__links{display:flex;gap:clamp(14px,3vw,46px);font:500 var(--t-xs)/1 var(--f)}
+.nav__links a{position:relative;padding:6px 0}
+.nav__links a::after{content:"";position:absolute;left:0;right:0;bottom:2px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:right;transition:transform .45s var(--ease-out)}
+.nav__links a:hover::after{transform:scaleX(1);transform-origin:left}
+.cursor{position:fixed;left:0;top:0;z-index:70;pointer-events:none;transform:translate3d(-100px,-100px,0)}
+.cursor span{display:block;transform:translate(14px,14px) scale(0);transform-origin:0 0;background:var(--ink);color:var(--cream);font:500 var(--t-s)/1 var(--f);padding:9px 12px;border-radius:99px;transition:transform .35s var(--ease-out)}
+.cursor.is-on span{transform:translate(14px,14px) scale(1)}
+@media (hover:none){.cursor{display:none}}
+
+/* ============ 3. HERO ============ */
+.hero{min-height:100vh;min-height:100svh;display:grid;grid-template-rows:1fr auto;padding-top:46px}
+.hero__c{display:flex;align-items:center;justify-content:center}
+.hero__word{display:flex;align-items:center;white-space:nowrap;font:700 var(--t-hero)/.8 var(--f);letter-spacing:-.055em}
+.hero__word .ln{padding:.04em 0 .2em;margin:-.04em 0 -.2em}
+.hero__word .ln>span{padding:0 .02em}
+.hero__slot{position:relative;overflow:hidden;margin:0 .1em;background:var(--ink);width:2.1em;height:1.9em;transition:width 1.25s var(--ease-io),height 1.25s var(--ease-io)}
+.hero.is-docked .hero__slot{width:.78em;height:.52em}
+.hero__slot canvas{position:absolute;inset:0;width:100%;height:100%}
+.hero__b{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap);align-items:end;padding:0 0 12px;font-size:var(--t-s);line-height:1.3}
+.hero__b p{margin:0;max-width:30em}
+.status{display:flex;gap:10px;align-items:center}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+.status b{font-weight:500;color:rgba(13,13,12,.5);display:block;font-size:var(--t-xs)}
+.mode{justify-self:end;display:flex;gap:10px;align-items:center}
+.mode button{border:1px solid var(--ink);border-radius:99px;padding:6px 12px;font:500 var(--t-s)/1 var(--f);min-width:120px;text-align:left;transition:background .3s,color .3s}
+.mode button[data-m=Bypass]{background:var(--red);border-color:var(--red);color:var(--cream)}
+.mode kbd{font:400 var(--t-xs)/1 var(--mono);color:rgba(13,13,12,.5)}
+
+/* ============ 4. IDEA (grid lines + dotted headline) ============ */
+.idea{padding-bottom:0}
+.idea__grid{position:relative;padding:58px 0 34px}
+.idea__cols{position:absolute;inset:0;display:grid;grid-template-columns:repeat(9,1fr);pointer-events:none}
+.idea__cols span{border-left:1px solid var(--line);font:400 var(--t-xs)/1 var(--mono);padding:8px 0 0 6px;color:rgba(13,13,12,.45);transform:scaleY(0);transform-origin:top;transition:transform 1.2s var(--ease-io)}
+.idea__cols span:first-child{border-left:0}
+.idea.is-in .idea__cols span{transform:none}
+.idea.is-in .idea__cols span:nth-child(n){transition-delay:calc(var(--i)*60ms)}
+.idea__rows{position:absolute;left:0;right:0;top:58px;bottom:34px;display:grid;grid-template-rows:repeat(3,1fr);pointer-events:none}
+.idea__rows span{border-top:1px solid var(--line)}
+.idea__rows span:last-child{border-bottom:1px solid var(--line)}
+.idea__h{position:relative;margin:0;font:600 var(--t-h)/.98 var(--f);letter-spacing:-.045em}
+.idea__h .row{display:flex;align-items:center;gap:.22em}
+.idea__h .row:nth-child(2){padding-left:11.1%}
+.idea__h .row:nth-child(3){padding-left:33.3%}
+.dot{display:inline-block;width:.62em;height:.62em;border-radius:50%;background:var(--ink);transform:scale(0);transition:transform .8s var(--ease-out)}
+.idea.is-in .dot{transform:scale(1)}
+.idea.is-in .row:nth-child(2) .dot{transition-delay:.12s}
+.idea.is-in .row:nth-child(3) .dot{transition-delay:.24s}
+
+/* draggable marquee */
+.marq{overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:pan-y;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+html.is-dragging .marq{cursor:grabbing}
+.marq__track{display:flex;width:max-content;will-change:transform}
+.marq__item{display:flex;align-items:center;gap:12px;padding:30px clamp(26px,4vw,64px);font:600 var(--t-m)/1 var(--f);letter-spacing:-.03em;white-space:nowrap}
+.marq__item small{font:400 var(--t-xs)/1 var(--mono);letter-spacing:0;opacity:.55}
+
+/* ============ 5. MEDIA + PIXEL DISSOLVE ============ */
+.media{position:relative;height:clamp(420px,72vw,1040px);background:var(--ink);overflow:hidden}
+.media canvas.art{position:absolute;inset:0;width:100%;height:100%}
+.media__cap{position:absolute;left:0;right:0;top:0;z-index:3;color:var(--cream);padding-top:52px;background:linear-gradient(rgba(13,13,12,.6),rgba(13,13,12,0));padding-bottom:40px}
+.media__cap .sec-top{padding-top:0}
+.pix{position:absolute;left:0;right:0;bottom:0;height:min(16vw,200px);display:grid;grid-template-columns:repeat(25,1fr);grid-template-rows:repeat(4,1fr);z-index:2;pointer-events:none}
+.pix i{background:var(--to,var(--cream));opacity:0}
+.pix i.on{opacity:1}
+
+/* ============ 6. UNIQUE (panel + numbered list) ============ */
+.uniq{padding-bottom:var(--sec)}
+.uniq__grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-top:clamp(60px,9vw,140px)}
+.uniq__right{display:flex;flex-direction:column}
+.uniq__head{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--ink);padding-bottom:8px;font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.04em}
+.uniq__head span:last-child{text-align:right}
+.uniq__title{font:600 var(--t-m)/1.05 var(--f);letter-spacing:-.03em;margin:14px 0 40px}
+.tracks{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
+.tracks li{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 0 16px;border-bottom:1px solid var(--line)}
+.tracks .n{font:400 var(--t-xs)/1.6 var(--mono)}
+.tracks b{display:block;font-weight:600;margin-bottom:4px}
+.tracks p{margin:0;font-size:var(--t-s);line-height:1.4;max-width:40em}
+.uniq__right .cells{margin-top:auto}
+.uniq__right .tracks{margin-bottom:40px}
+
+/* the chat panel mock */
+.pn{background:var(--panel);color:#d9d7d2;font:400 12.5px/1.45 var(--mono);aspect-ratio:1/1.06;display:flex;flex-direction:column;overflow:hidden;position:sticky;top:60px}
+.pn__bar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #333;color:#9c9a95}
+.pn__bar b{color:#f1ede6;font-weight:500;margin-right:auto}
+.pill{border:1px solid #4a4946;border-radius:99px;padding:3px 9px;color:#f1ede6}
+.pill--red{background:var(--red);border-color:var(--red)}
+.pn__feed{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:9px;overflow:hidden}
+.msg{opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s var(--ease-out)}
+.msg.on{opacity:1;transform:none}
+.msg--user{align-self:flex-end;max-width:82%;background:var(--panel-2);padding:8px 10px;color:#f1ede6;font-family:var(--f);font-size:13px}
+.tool{display:flex;gap:10px;align-items:center;color:#b9b7b1}
+.tool em{font-style:normal;color:#f1ede6}
+.tool .ok{margin-left:auto;color:#7fd17f}
+.tool .ok.wait{color:#9c9a95}
+.ask{border:1px solid #4a4946;padding:9px 10px;color:#f1ede6}
+.ask div{display:flex;gap:8px;margin-top:8px}
+.ask span{border:1px solid #4a4946;padding:3px 8px}
+.ask span:first-child{background:#f1ede6;color:var(--panel)}
+.pn__status{display:flex;gap:8px;align-items:center;color:#9c9a95}
+.pn__status i{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1s infinite}
+.pn__input{border-top:1px solid #333;padding:12px;color:#77756f}
+
+/* ============ 7. FUNCTIONS (rows, accordion) ============ */
+.fn{padding-bottom:var(--sec)}
+.fn__img{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin:clamp(60px,8vw,120px) 0 clamp(40px,6vw,90px)}
+.fn__img .art-box{grid-column:2;aspect-ratio:16/10;position:relative;background:var(--ink);overflow:hidden}
+.fn__img .art-box canvas{position:absolute;inset:0;width:100%;height:100%}
+.fn__img h2{margin:0;font:600 var(--t-h)/.92 var(--f);letter-spacing:-.045em;align-self:end}
+.rows{border-top:1px solid var(--ink)}
+.rw{border-bottom:1px solid var(--ink)}
+.rw__h{display:grid;grid-template-columns:60px 1.1fr 2fr 40px;gap:var(--gap);align-items:center;width:100%;text-align:left;padding:14px 0;transition:background .3s,color .3s}
+.rw__h:hover,.rw.is-open .rw__h{background:var(--ink);color:var(--red)}
+.rw__h .n{font:400 var(--t-xs)/1 var(--mono);padding-left:6px}
+.rw__h b{font:600 var(--t-m)/1 var(--f);letter-spacing:-.03em}
+.rw__h span{font-size:var(--t-s)}
+.rw__h .pl{justify-self:end;padding-right:8px;font:400 22px/1 var(--mono);transition:transform .4s var(--ease-out)}
+.rw.is-open .pl{transform:rotate(45deg)}
+.rw__b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .6s var(--ease-io)}
+.rw.is-open .rw__b{grid-template-rows:1fr}
+.rw__b>div{overflow:hidden}
+.rw__b ul{margin:0;padding:18px 0 26px calc(60px + var(--gap) + (100% - 60px - 40px - 3*var(--gap))*1.1/3.1 + var(--gap));list-style:none;display:grid;gap:10px;font-size:var(--t-b);max-width:none}
+.rw__b li{max-width:46em;padding-left:18px;position:relative}
+.rw__b li::before{content:"";position:absolute;left:0;top:.55em;width:7px;height:7px;background:var(--ink)}
+.tools{margin-top:clamp(70px,9vw,140px)}
+.tools h3{font:600 var(--t-m)/1 var(--f);letter-spacing:-.03em;margin:14px 0 22px}
+.tools__g{display:grid;grid-template-columns:200px 1fr;gap:var(--gap);padding:12px 0;border-top:1px solid var(--ink);align-items:baseline}
+.tools__g:last-child{border-bottom:1px solid var(--ink)}
+.tools__g span{font-size:var(--t-s);text-transform:uppercase;letter-spacing:.04em}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips code{border:1px solid var(--ink);padding:4px 8px;font-size:12px;transition:background .25s,color .25s}
+.chips code:hover{background:var(--ink);color:var(--red)}
+
+/* ============ 8. ALSO INSIDE (dropping stack) ============ */
+.also{padding-bottom:var(--sec)}
+.also__grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-top:clamp(60px,8vw,120px);align-items:center}
+.also__text h2{margin:0 0 26px;font:600 var(--t-h)/.92 var(--f);letter-spacing:-.045em}
+.also__text p{margin:0;max-width:30em}
+.stack{position:relative;height:clamp(420px,46vw,640px);display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
+.card{position:absolute;will-change:transform;bottom:40px;left:50%;width:min(31vw,430px);aspect-ratio:4/5;background:var(--ink);color:var(--cream);transform-origin:50% 0;transition:transform .7s var(--ease-out),opacity .5s;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.card canvas{position:absolute;inset:0;width:100%;height:100%}
+.card__t{position:relative;z-index:2;padding:16px;background:linear-gradient(to top,rgba(13,13,12,.92),rgba(13,13,12,0))}
+.card__t b{display:block;font:600 var(--t-m)/1 var(--f);letter-spacing:-.03em;margin-bottom:8px}
+.card__t p{margin:0;font-size:var(--t-s);line-height:1.4;color:rgba(241,237,230,.85)}
+.card.is-drop{transition:transform .65s var(--ease-drop),opacity .65s;opacity:0!important}
+.stack__ui{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;font-size:var(--t-s)}
+.stack__ui button{text-transform:uppercase;letter-spacing:.04em;font-size:var(--t-xs)}
+
+/* ============ 9. BEFORE / NOW (archive slider) ============ */
+.bn{padding-bottom:clamp(60px,8vw,110px)}
+.bn__main{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-top:clamp(60px,8vw,120px);min-height:clamp(320px,34vw,470px)}
+.bn__count{font:500 clamp(70px,11vw,170px)/.85 var(--f);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.bn__count span{display:inline-block}
+.bn__slide{display:grid;grid-template-rows:auto 1fr;gap:28px}
+.bn__slide h3{margin:0;font:600 var(--t-m)/1.05 var(--f);letter-spacing:-.03em}
+.bn__cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);align-content:start}
+.bn__cols .label{margin-bottom:12px;color:rgba(241,237,230,.55)}
+.bn__cols p{margin:0;font-size:var(--t-b)}
+.bn__cols .now p{color:var(--cream)}
+.bn__cols .was p{color:rgba(241,237,230,.6);text-decoration:line-through;text-decoration-color:rgba(226,35,26,.8);text-decoration-thickness:1px}
+.bn__slide .swap{transition:opacity .35s,transform .45s var(--ease-out)}
+.bn__slide.is-out .swap{opacity:0;transform:translateY(10px)}
+.bn__thumbs{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:40px}
+.bn__thumbs button{text-align:left;padding:10px 0 0;border-top:1px solid rgba(241,237,230,.25);font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.04em;color:rgba(241,237,230,.5);position:relative;transition:color .3s}
+.bn__thumbs button i{position:absolute;left:0;top:-1px;height:1px;width:100%;background:var(--red);transform:scaleX(0);transform-origin:left}
+.bn__thumbs button.is-active{color:var(--cream)}
+
+/* ============ 10. STATUS (huge number over art) ============ */
+.st{position:relative;height:clamp(560px,78vw,1080px);background:var(--ink);color:var(--cream);overflow:hidden}
+.st canvas.art{position:absolute;inset:0;width:100%;height:100%;opacity:.85}
+.st__top{position:relative;z-index:2;padding-top:14px}
+.st__lists{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-top:22px;font-size:var(--t-s);line-height:1.4}
+.st__lists h4{margin:0 0 8px;font:500 var(--t-xs)/1 var(--f);text-transform:uppercase;letter-spacing:.04em;color:rgba(241,237,230,.6)}
+.st__lists ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.st__num{position:absolute;left:0;right:0;bottom:-.12em;z-index:2;text-align:center;font:600 clamp(200px,44vw,700px)/.8 var(--f);letter-spacing:-.06em;color:var(--cream);will-change:transform;pointer-events:none}
+.st__num small{display:block;font:500 var(--t-s)/1 var(--f);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.4em}
+
+/* ============ 11. GET (CTA) ============ */
+.get{padding-bottom:16px}
+.get__h{margin:clamp(40px,6vw,90px) 0 0;font:600 var(--t-h)/.92 var(--f);letter-spacing:-.045em;max-width:12em}
+.get__lead{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-top:30px}
+.get__lead p{grid-column:2;margin:0;font:600 var(--t-m)/1.1 var(--f);letter-spacing:-.03em;max-width:20em}
+.thumbs{overflow:hidden;margin:clamp(50px,7vw,100px) 0 40px}
+.thumbs__track{display:flex;gap:6px;width:max-content;will-change:transform}
+.thumbs canvas{width:clamp(110px,11vw,170px);height:clamp(80px,8vw,124px);background:var(--ink)}
+.thumbs canvas:nth-child(3n+1){height:clamp(110px,11vw,170px)}
+.thumbs__track{align-items:center}
+.get .cells{margin-bottom:22px}
+.doctor{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);font-size:var(--t-s)}
+.doctor p{margin:0;max-width:34em}
+
+/* ============ 12. FOOTER ============ */
+.foot{padding:70px 0 12px;font-size:var(--t-s)}
+.foot__g{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap)}
+.foot__g div{display:flex;flex-direction:column;gap:4px}
+.foot__g h5{margin:0 0 8px;font:500 var(--t-xs)/1 var(--f);text-transform:uppercase;letter-spacing:.04em;color:rgba(13,13,12,.5)}
+.foot__word{font:700 clamp(60px,16.2vw,260px)/.8 var(--f);letter-spacing:-.06em;margin:70px 0 10px;white-space:nowrap}
+.foot__legal{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:rgba(13,13,12,.55);font-size:var(--t-xs)}
+
+/* ============ 13. RESPONSIVE ============ */
+@media (max-width:900px){
+  .nav__links{display:none}
+  .hero__slot{width:.95em;height:1.35em}
+  .hero__b{grid-template-columns:1fr 1fr}
+  .hero__b p{grid-column:1/-1;order:-1}
+  .sec-top{grid-template-columns:1fr}
+  .idea__cols{grid-template-columns:repeat(5,1fr)}
+  .idea__cols span:nth-child(n+6){display:none}
+  .idea__h .row:nth-child(2){padding-left:8%}
+  .idea__h .row:nth-child(3){padding-left:18%}
+  .uniq__grid,.fn__img,.also__grid,.bn__main,.get__lead,.doctor{grid-template-columns:1fr}
+  .fn__img .art-box{grid-column:1}
+  .pn{position:relative;top:0;aspect-ratio:auto;min-height:520px}
+  .rw__h{grid-template-columns:36px 1fr 30px}
+  .rw__h span{display:none}
+  .rw__b ul{padding-left:0}
+  .tools__g{grid-template-columns:1fr}
+  .card{width:min(74vw,380px)}
+  .bn__cols{grid-template-columns:1fr}
+  .bn__thumbs{grid-template-columns:repeat(4,1fr)}
+  .get__lead p{grid-column:1}
+  .cells{grid-template-columns:1fr}
+  .cell{border-right:0;border-bottom:1px solid currentColor;min-height:64px}
+  .cell:last-child{border-bottom:0}
+  .foot__g{grid-template-columns:1fr 1fr}
+  .st__lists{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<a class="sr" href="#main">Skip to content</a>
+
+<nav class="nav" id="nav" aria-label="Main">
+  <a class="nav__mark" href="#top">k.stage</a>
+  <div class="nav__links">
+    <a href="#unique">Unique</a><a href="#functions">Functions</a><a href="#also">Also inside</a><a href="#before">Before / now</a><a href="#status">Status</a><a href="#get">Get it</a>
+  </div>
+</nav>
+<div class="cursor" id="cursor" aria-hidden="true"><span>drag</span></div>
+
+<main id="main">
+
+  <!-- HERO -->
+  <section class="sec hero wrap" id="top">
+    <h1 class="sr">kontext.stage — the chat that builds your TouchDesigner network</h1>
+    <div class="hero__c">
+      <div class="hero__word" id="heroWord" aria-hidden="true">
+        <span class="ln"><span>kontext</span></span>
+        <span class="hero__slot" id="heroSlot"><canvas id="heroCanvas"></canvas></span>
+        <span class="ln"><span>.stage</span></span>
+      </div>
+    </div>
+    <div class="hero__b">
+      <div class="status" aria-live="polite"><i></i><div><b>Agent</b><span id="statusText">thinking</span></div></div>
+      <p>A chat panel inside TouchDesigner. Your agent builds the network, checks it and hands it to the team — in one .tox.</p>
+      <div class="mode"><kbd>Shift+Tab</kbd><button id="modeBtn" type="button" data-m="Auto" aria-label="Permission mode, click to switch">Mode: Auto</button></div>
+    </div>
+  </section>
+
+  <!-- IDEA -->
+  <section class="sec idea wrap reveal" id="idea">
+    <div class="idea__grid">
+      <div class="idea__cols" aria-hidden="true"><span style="--i:0">01</span><span style="--i:1">02</span><span style="--i:2">03</span><span style="--i:3">04</span><span style="--i:4">05</span><span style="--i:5">06</span><span style="--i:6">07</span><span style="--i:7">08</span><span style="--i:8">09</span></div>
+      <div class="idea__rows" aria-hidden="true"><span></span><span></span><span></span></div>
+      <h2 class="idea__h">
+        <span class="row"><i class="dot"></i><span class="ln"><span>A chat</span></span></span>
+        <span class="row"><span class="ln"><span>that</span></span><i class="dot"></i><span class="ln"><span>builds</span></span></span>
+        <span class="row"><i class="dot"></i><span class="ln"><span>the network</span></span></span>
+      </h2>
+    </div>
+    <div class="marq" id="marq" data-cursor="drag" aria-label="Supported agents and MCP clients">
+      <div class="marq__track" id="marqTrack"></div>
+    </div>
+  </section>
+
+  <!-- MEDIA 1 -->
+  <section class="media" id="inside" data-art="network" style="--to:var(--gray)">
+    <canvas class="art"></canvas>
+    <div class="pix" aria-hidden="true"></div>
+    <div class="media__cap wrap"><div class="sec-top"><span class="label">Inside TouchDesigner</span><p>Opens in a pane, a separate window or the browser. The agent works only in <code>stage_work</code>, next to the component, and never touches the rest of your project.</p></div></div>
+  </section>
+
+  <!-- UNIQUE -->
+  <section class="sec sec--gray uniq wrap reveal" id="unique">
+    <div class="sec-top"><span class="label">What's unique</span><p>Everything lives in one component. Move it to another machine as a single file.</p></div>
+    <div class="uniq__grid">
+      <div>
+        <div class="pn" id="panel" aria-label="Example of the kontext.stage chat panel">
+          <div class="pn__bar"><b>kontext.stage</b><span>Claude Code</span><span class="pill" id="pnMode">Auto</span></div>
+          <div class="pn__feed" id="pnFeed">
+            <div class="msg msg--user">Build an audio-reactive particle system from the mic input.</div>
+            <div class="msg pn__status"><i></i><span>thinking</span></div>
+            <div class="msg tool"><span>→</span><em>checkpoint</em><span class="ok">saved</span></div>
+            <div class="msg tool"><span>→</span><em>create_op</em> audiodevicein<span class="ok">ok</span></div>
+            <div class="msg tool"><span>→</span><em>build_network</em> 6 ops<span class="ok">ok</span></div>
+            <div class="msg ask">run_python wants to change a parameter outside the network.<div><span>Allow</span><span>Deny</span><span>Allow for chat</span></div></div>
+            <div class="msg tool"><span>→</span><em>verify</em><span class="ok">0 errors</span></div>
+            <div class="msg tool"><span>→</span><em>annotate</em> “Mic → particles”<span class="ok">ok</span></div>
+            <div class="msg pn__status"><i></i><span>waiting</span></div>
+          </div>
+          <div class="pn__input">Message the network…</div>
+        </div>
+      </div>
+      <div class="uniq__right">
+        <div class="uniq__head"><span>01</span><span>02</span><span>03</span><span>04</span></div>
+        <p class="uniq__title fade">One panel. Three brains.<br>Permissions you can see.</p>
+        <ol class="tracks">
+          <li class="fade"><span class="n">01</span><div><b>Inside TouchDesigner</b><p>The panel opens in a pane, a floating window or the browser. All work happens in <code>stage_work</code> next to the component.</p></div></li>
+          <li class="fade"><span class="n">02</span><div><b>Three brains in one panel</b><p>Claude Code on your Claude subscription, Codex on your ChatGPT plan, and 13 API providers. Switch in settings, no reinstall.</p></div></li>
+          <li class="fade"><span class="n">03</span><div><b>Permissions in the chat</b><p>Ask, Plan, Auto and Bypass. Every risky action shows up in the chat: allow it, deny it, or allow it for the whole chat. Switch from the pill or with Shift+Tab.</p></div></li>
+          <li class="fade"><span class="n">04</span><div><b>One file for the team</b><p>The component saves to a single <code>.tox</code> with settings inside. Drop it into a network and it starts on its own. Keys and tokens never go into the file.</p></div></li>
+        </ol>
+        <div class="cells"><a class="cell" href="#functions">All functions</a><a class="cell" href="#tools">Agent tools</a><a class="cell" href="#get">Get the .tox</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNCTIONS -->
+  <section class="sec sec--red fn wrap reveal" id="functions">
+    <div class="sec-top"><span class="label">Functions</span><p>Six parts, one component. Open a row to see what it does.</p></div>
+    <div class="fn__img">
+      <h2><span class="ln"><span>What it</span></span><span class="ln"><span>does</span></span></h2>
+      <div class="art-box" data-art="scan"><canvas></canvas></div>
+    </div>
+    <div class="rows" id="rows">
+      <div class="rw is-open"><button class="rw__h" type="button" aria-expanded="true"><span class="n">01</span><b>Chat</b><span>Replies, tool calls and status in one feed</span><i class="pl">+</i></button>
+        <div class="rw__b"><div><ul>
+          <li>Agent replies, tool calls and the status “thinking / building / waiting” appear in the feed.</li>
+          <li>Stop, new chat, Undo, message draft, copy reply.</li>
+          <li>Text you select in TouchDesigner goes to the agent as context.</li>
+          <li>Mouse-wheel scrolling, smooth transitions, and a look that matches TouchDesigner.</li>
+        </ul></div></div></div>
+      <div class="rw"><button class="rw__h" type="button" aria-expanded="false"><span class="n">02</span><b>Agent</b><span>Claude Code, Codex or any API model</span><i class="pl">+</i></button>
+        <div class="rw__b"><div><ul>
+          <li><strong>Claude Code</strong> runs the Claude Code installed on your machine, on your subscription. Model, effort, step count and toolset are configurable.</li>
+          <li><strong>Codex</strong> runs Codex CLI on your ChatGPT plan or an OpenAI key, in a read-only or workspace-write sandbox.</li>
+          <li><strong>API</strong> works with any OpenAI-compatible provider. The model list loads from the provider.</li>
+        </ul></div></div></div>
+      <div class="rw"><button class="rw__h" type="button" aria-expanded="false"><span class="n">03</span><b>Permissions</b><span>Ask, Plan, Auto, Bypass</span><i class="pl">+</i></button>
+        <div class="rw__b"><div><ul>
+          <li><strong>Ask</strong> asks before every change.</li>
+          <li><strong>Plan</strong> shows a plan first and builds after you approve it.</li>
+          <li><strong>Auto</strong> allows TouchDesigner tools and asks about everything else.</li>
+          <li><strong>Bypass</strong> asks nothing. For tests, not for the team.</li>
+        </ul></div></div></div>
+      <div class="rw"><button class="rw__h" type="button" aria-expanded="false"><span class="n">04</span><b>Network</b><span>Build, run, check — inside stage_work</span><i class="pl">+</i></button>
+        <div class="rw__b"><div><ul>
+          <li>Every change goes to <code>stage_work</code>. Deleting anything outside it needs your confirmation.</li>
+          <li>Create and connect nodes, set parameters, run Python inside TouchDesigner (with confirmation in Ask mode).</li>
+          <li>Check the network for errors, export it to text, and describe any operator by its type.</li>
+        </ul></div></div></div>
+      <div class="rw"><button class="rw__h" type="button" aria-expanded="false"><span class="n">05</span><b>Settings</b><span>Everything in one place, plus Doctor</span><i class="pl">+</i></button>
+        <div class="rw__b"><div><ul>
+          <li>Agent, permissions, tools, project memory, knowledge base and its repository, cloud or local image processing.</li>
+          <li>The Doctor button checks the install, the sign-in and that every component is reachable.</li>
+        </ul></div></div></div>
+      <div class="rw"><button class="rw__h" type="button" aria-expanded="false"><span class="n">06</span><b>Delivery</b><span>Installer, package export, self-start</span><i class="pl">+</i></button>
+        <div class="rw__b"><div><ul>
+          <li>The installer builds the component and saves it as a <code>.tox</code>.</li>
+          <li>Package export saves the component with <code>stage_work</code> and settings — without keys.</li>
+          <li>On load, the component starts its server, creates the work folder and opens the panel.</li>
+        </ul></div></div></div>
+    </div>
+
+    <div class="tools" id="tools">
+      <span class="label">Agent tools</span>
+      <h3>21 tools the agent can call</h3>
+      <div class="tools__g"><span>Read the network</span><div class="chips"><code>td_info</code><code>list_ops</code><code>get_op</code><code>operator_info</code><code>operator_types</code><code>export_network</code></div></div>
+      <div class="tools__g"><span>Change the network</span><div class="chips"><code>create_op</code><code>build_network</code><code>run_python</code><code>annotate</code></div></div>
+      <div class="tools__g"><span>Check</span><div class="chips"><code>verify</code><code>look</code></div></div>
+      <div class="tools__g"><span>Roll back</span><div class="chips"><code>checkpoint</code></div></div>
+      <div class="tools__g"><span>Knowledge &amp; memory</span><div class="chips"><code>stage_guide</code><code>search_knowledge</code><code>get_knowledge</code><code>sync_knowledge</code><code>recall</code><code>remember</code></div></div>
+    </div>
+  </section>
+
+  <!-- MEDIA 2 -->
+  <section class="media" data-art="feedback" style="--to:var(--cream)">
+    <canvas class="art"></canvas>
+    <div class="pix" aria-hidden="true"></div>
+    <div class="media__cap wrap"><div class="sec-top"><span class="label">Undo is real</span><p>Before a risky change the agent saves a <code>checkpoint</code>. Whatever it builds, you can roll back with Undo.</p></div></div>
+  </section>
+
+  <!-- ALSO INSIDE -->
+  <section class="sec also wrap reveal" id="also">
+    <div class="sec-top"><span class="label">Also inside</span><p>The parts that make it work for a team, not just for one person.</p></div>
+    <div class="also__grid">
+      <div class="also__text">
+        <h2><span class="ln"><span>Built for</span></span><span class="ln"><span>handoff</span></span></h2>
+        <p class="fade">Click the stack. Each card is one thing kontext.stage does so the next person can open your network and keep going.</p>
+      </div>
+      <div class="stack" id="stack" data-cursor="next" role="group" aria-label="Also inside, card stack">
+        <div class="stack__ui"><span id="stackNum" style="font-variant-numeric:tabular-nums">01 / 06</span><button type="button" id="stackNext">Next card →</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BEFORE / NOW -->
+  <section class="sec sec--ink bn wrap reveal" id="before">
+    <div class="sec-top"><span class="label">Before / now</span><p>What changed in this version, point by point.</p></div>
+    <div class="bn__main">
+      <div class="bn__count"><span id="bnNum">01</span>/07</div>
+      <div class="bn__slide" id="bnSlide">
+        <h3 class="swap" id="bnTitle"></h3>
+        <div class="bn__cols swap">
+          <div class="was"><span class="label">Before</span><p id="bnWas"></p></div>
+          <div class="now"><span class="label">Now</span><p id="bnNow"></p></div>
+        </div>
+      </div>
+    </div>
+    <div class="bn__thumbs" id="bnThumbs" role="tablist" aria-label="Before and now topics"></div>
+  </section>
+
+  <!-- STATUS -->
+  <section class="st" id="status" data-art="particles">
+    <canvas class="art"></canvas>
+    <div class="st__top wrap">
+      <div class="sec-top"><span class="label">Status &amp; limits</span><p>We tell you what's checked and what isn't.</p></div>
+      <div class="st__lists">
+        <div><h4>Tested</h4><ul><li>181 automated tests on a TouchDesigner simulation: permissions, the gate, Codex, settings, the panel, copying, export and path search.</li></ul></div>
+        <div><h4>Not tested yet</h4><ul><li>Codex with a live model — the sandbox network can't reach OpenAI.</li><li>The panel across different TouchDesigner versions.</li><li><code>look</code> with a live vision model.</li></ul></div>
+      </div>
+    </div>
+    <div class="st__num" id="stNum"><small>automated tests</small>181</div>
+  </section>
+
+  <!-- GET -->
+  <section class="sec sec--red get wrap reveal" id="get">
+    <div class="sec-top"><span class="label">Get it</span><p>Early access. One file, no installer on the receiving end.</p></div>
+    <h2 class="get__h"><span class="ln"><span>Drop the .tox.</span></span><span class="ln"><span>Start talking.</span></span></h2>
+    <div class="get__lead"><p class="fade">Drag the component into your network. The panel opens, the server starts, and the agent is ready to build.</p></div>
+    <div class="thumbs" aria-hidden="true"><div class="thumbs__track" id="thumbsTrack"></div></div>
+    <div class="cells"><a class="cell" id="ctaGet" href="#get">Request the .tox</a><a class="cell" href="#functions">See every function</a><a class="cell" href="#status">Read the limits</a></div>
+    <div class="doctor"><span class="label">If something breaks</span><p>Open Settings and run Doctor first. Send us its report, along with <code>export.log</code> if you have one.</p></div>
+  </section>
+</main>
+
+<footer class="sec foot wrap">
+  <div class="foot__g">
+    <div><h5>Plugin</h5><a href="#unique">What's unique</a><a href="#functions">Functions</a><a href="#tools">Agent tools</a></div>
+    <div><h5>Team</h5><a href="#also">Also inside</a><a href="#before">Before / now</a><a href="#status">Status</a></div>
+    <div><h5>Works with</h5><span>Claude Code</span><span>Codex</span><span>13 API providers</span></div>
+    <div><h5>For</h5><span>TouchDesigner</span><span>One .tox</span><span>Keys stay on your machine</span></div>
+  </div>
+  <div class="foot__word" id="footWord">kontext.stage</div>
+  <div class="foot__legal"><span>© 2026 kontext.</span><span>TouchDesigner plugin</span><span>Made in Shanghai</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(() => {
+/* ================= CONFIG ================= */
+const CONTACT = '#get';                 // put your request link here (form, Telegram, Instagram…)
+const AGENTS = [
+  ['Claude Code', 'subscription'], ['Codex', 'ChatGPT plan'], ['13 API providers', 'OpenAI-compatible'],
+  ['Claude Desktop', 'MCP'], ['Gemini', 'MCP'], ['Cursor', 'MCP'], ['VS Code', 'MCP'], ['Windsurf', 'MCP']
+];
+const ALSO = [
+  ['Checkpoints', 'Before a risky change the agent saves a checkpoint, so everything rolls back with Undo.', 'feedback'],
+  ['Team knowledge base', 'Rules and recipes sync from your team’s GitHub release. Rules are always in the agent’s prompt; recipes load on request.', 'grid'],
+  ['Handoff annotations', 'annotate frames blocks of the network with titled boxes and notes, in the language of the chat.', 'network'],
+  ['Check by picture', 'look compares the result with the target through a vision model, if you set one up.', 'noise'],
+  ['Project memory', 'Decisions about the project are saved and loaded into new chats, when memory is on.', 'particles'],
+  ['Any MCP client', 'Ready-made commands in settings for Claude, Codex, Gemini, Cursor, VS Code, Windsurf and Claude Desktop.', 'scan']
+];
+const BEFORE = [
+  ['Opening the panel', 'Only in a separate window, and you had to call it by hand.', 'Opens in a pane right after launch. A window and the browser are there too.'],
+  ['The agent', 'One API provider.', 'Claude Code, Codex and 13 API providers.'],
+  ['Permissions', 'The switch didn’t affect what the agent did.', 'The mode applies to the current and the next message. Bypass doesn’t ask.'],
+  ['Moving it', 'An installer and a launch through Textport.', 'Drag the .tox into a network. Settings are already inside.'],
+  ['Settings & keys', 'Keys were stored next to the component.', 'Keys live only in settings on your own machine and never go into the file.'],
+  ['Knowledge', 'Local files.', 'Synced from the team repository, plus drafts from Documents.'],
+  ['Copying', 'Text in the chat couldn’t be copied.', 'Select, copy, and copy buttons right in the chat.']
+];
+
+/* ================= HELPERS ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const map = (v, a, b) => clamp((v - a) / (b - a));
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const touch = matchMedia('(hover: none)').matches;
+let vw = innerWidth, vh = innerHeight;
+const rnd = (() => { let s = 11; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+
+/* ================= GENERATIVE ARTS (original, TouchDesigner-flavoured) ================= */
+const INK = '#0d0d0c', CREAM = '#f1ede6', RED = '#e2231a';
+const ARTS = {
+  noise(c, w, h, t) {             // flowing line field
+    c.fillStyle = INK; c.fillRect(0, 0, w, h);
+    c.lineWidth = Math.max(1, w / 700); c.strokeStyle = CREAM;
+    const rows = 38;
+    for (let i = 0; i < rows; i++) {
+      const y0 = (i + .5) / rows * h; c.globalAlpha = .25 + .75 * (i % 6 === 0);
+      c.beginPath();
+      for (let x = 0; x <= w; x += w / 90) {
+        const n = Math.sin(x / w * 6 + t * .7 + i * .35) * Math.cos(x / w * 3.1 - t * .45 + i * .2);
+        c.lineTo(x, y0 + n * h * .045 * (1 + Math.sin(t * .3 + i)));
+      }
+      c.stroke();
+    }
+    c.globalAlpha = 1; c.fillStyle = RED; c.fillRect(w * .5 + Math.sin(t) * w * .3, h * .5 - 3, 6, 6);
+  },
+  feedback(c, w, h, t) {          // rotating rings, like a feedback TOP
+    c.fillStyle = INK; c.fillRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2, R = Math.max(w, h) * .62;
+    for (let i = 0; i < 26; i++) {
+      const r = R * (1 - i / 26) * (.92 + .08 * Math.sin(t * 1.4 + i * .5));
+      c.save(); c.translate(cx, cy); c.rotate(t * .12 * (i % 2 ? 1 : -1) + i * .09);
+      c.strokeStyle = i % 7 === 3 ? RED : CREAM; c.globalAlpha = .18 + .6 * (i / 26);
+      c.lineWidth = Math.max(1, w / 500); c.strokeRect(-r / 2, -r / 2, r, r); c.restore();
+    }
+    c.globalAlpha = 1;
+  },
+  grid(c, w, h, t) {              // instanced boxes driven by a wave
+    c.fillStyle = INK; c.fillRect(0, 0, w, h);
+    const n = 18, cw = w / n, rows = Math.ceil(h / cw);
+    for (let y = 0; y < rows; y++) for (let x = 0; x < n; x++) {
+      const v = (Math.sin(x * .5 + t * 1.6) + Math.cos(y * .6 - t * 1.1)) * .25 + .5;
+      const s = cw * .85 * v;
+      c.fillStyle = (x + y * 3) % 23 === 0 ? RED : CREAM; c.globalAlpha = .2 + .8 * v;
+      c.fillRect(x * cw + (cw - s) / 2, y * cw + (cw - s) / 2, s, s);
+    }
+    c.globalAlpha = 1;
+  },
+  particles(c, w, h, t) {         // orbiting points
+    c.fillStyle = INK; c.fillRect(0, 0, w, h);
+    const cx = w / 2, cy = h * .45, N = 900;
+    for (let i = 0; i < N; i++) {
+      const a = i * 2.39996 + t * (.05 + (i % 7) * .012), r = Math.sqrt(i / N) * Math.min(w, h) * .62 * (1 + .06 * Math.sin(t * 2 + i));
+      const x = cx + Math.cos(a) * r * 1.35, y = cy + Math.sin(a) * r * .75;
+      c.fillStyle = i % 97 === 0 ? RED : CREAM; c.globalAlpha = .35 + .65 * ((i * 13) % 10) / 10;
+      const s = Math.max(1, w / 650); c.fillRect(x, y, s, s);
+    }
+    c.globalAlpha = 1;
+  },
+  network(c, w, h, t) {           // operator boxes and wires
+    c.fillStyle = '#1c1c1b'; c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(241,237,230,.08)'; c.lineWidth = 1;
+    const g = w / 24; for (let x = 0; x < w; x += g) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } for (let y = 0; y < h; y += g) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+    const cols = 5, rows = 3, bw = w / 9, bh = bw * .55, nodes = [];
+    for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) if ((i * 7 + j * 3) % 4 !== 1) nodes.push([w * (.1 + i * .19) + Math.sin(t * .5 + i + j) * 4, h * (.22 + j * .27) + Math.cos(t * .4 + i) * 4, i, j]);
+    c.lineWidth = Math.max(1.5, w / 600);
+    nodes.forEach(n => nodes.forEach(m => { if (m[2] === n[2] + 1 && Math.abs(m[3] - n[3]) <= 1) {
+      c.strokeStyle = (n[3] + m[3]) % 3 === 0 ? RED : 'rgba(241,237,230,.55)';
+      c.beginPath(); c.moveTo(n[0] + bw, n[1] + bh / 2); c.bezierCurveTo(n[0] + bw * 1.5, n[1] + bh / 2, m[0] - bw * .5, m[1] + bh / 2, m[0], m[1] + bh / 2); c.stroke();
+      const p = (t * .35 + n[2] * .2 + n[3] * .1) % 1; const x = lerp(n[0] + bw, m[0], p), y = lerp(n[1] + bh / 2, m[1] + bh / 2, p);
+      c.fillStyle = CREAM; c.fillRect(x - 2, y - 2, 4, 4);
+    }}));
+    nodes.forEach(([x, y, i, j], k) => {
+      c.fillStyle = '#2a2a28'; c.fillRect(x, y, bw, bh);
+      c.fillStyle = ['#5a8f6b', '#5b74a6', '#a46e3f', '#8a5aa6'][(i + j) % 4]; c.fillRect(x, y, bw, bh * .22);
+      c.fillStyle = 'rgba(241,237,230,.75)'; c.font = `${Math.max(9, bw * .1)}px JetBrains Mono, monospace`;
+      c.fillText(['noise', 'feedback', 'audio', 'math', 'render', 'level', 'null', 'geo'][k % 8] + (k + 1), x + 6, y + bh * .62);
+      c.fillStyle = 'rgba(241,237,230,.25)'; c.fillRect(x + 6, y + bh * .72, (bw - 12) * (.5 + .5 * Math.sin(t * 2 + k)), 3);
+    });
+  },
+  scan(c, w, h, t) {              // spectrum bars
+    c.fillStyle = INK; c.fillRect(0, 0, w, h);
+    const n = 64, bw = w / n;
+    for (let i = 0; i < n; i++) {
+      const v = Math.abs(Math.sin(i * .3 + t * 2.1) * Math.cos(i * .07 - t * .9)) * .85 + .05;
+      c.fillStyle = i % 16 === 5 ? RED : CREAM; c.globalAlpha = .4 + .6 * v;
+      c.fillRect(i * bw + 1, h - v * h * .9, bw - 2, v * h * .9);
+    }
+    c.globalAlpha = 1;
+  }
+};
+const ART_KEYS = Object.keys(ARTS);
+const live = new Set();                  // canvases currently on screen
+function sizeCanvas(cv) {
+  const dpr = Math.min(1.5, devicePixelRatio || 1), r = cv.getBoundingClientRect();
+  cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
+  cv._w = cv.width; cv._h = cv.height;
+}
+function register(cv, art, speed = 1) {
+  cv._art = art; cv._speed = speed; sizeCanvas(cv);
+  cvIO.observe(cv);
+}
+const cvIO = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? live.add(e.target) : live.delete(e.target)), { rootMargin: '100px' });
+function drawCanvas(cv, t) { const c = cv.getContext('2d'); ARTS[cv._art](c, cv._w, cv._h, t * cv._speed); }
+
+/* ================= SMOOTH SCROLL ================= */
+const lenis = (!reduced && window.Lenis) ? new Lenis({ lerp: .1, smoothWheel: true, syncTouch: false }) : null;
+$$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+  const id = a.getAttribute('href'); if (id.length < 2) return;
+  const el = $(id); if (!el) return; e.preventDefault();
+  lenis ? lenis.scrollTo(el, { duration: 1.4 }) : el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+}));
+if (CONTACT !== '#get') { const a = $('#ctaGet'); a.href = CONTACT; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+
+/* ================= REVEALS ================= */
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -12% 0px' });
+$$('.reveal, .fade').forEach(el => io.observe(el));
+$$('.tracks li').forEach((li, i) => li.style.transitionDelay = i * 80 + 'ms');
+
+/* ================= HERO ================= */
+const hero = $('#top'), heroWord = $('#heroWord'), heroCv = $('#heroCanvas');
+function fitHero() {
+  // fit "kontext ▢ .stage" (docked) to 78% of the width on desktop, 94% on phones
+  const target = vw * (vw > 900 ? .78 : .94);
+  document.documentElement.style.setProperty('--t-hero', '100px');
+  const docked = hero.classList.contains('is-docked');
+  hero.classList.add('is-docked'); heroWord.style.transition = 'none'; $('#heroSlot').style.transition = 'none';
+  const w = heroWord.getBoundingClientRect().width || 1;
+  document.documentElement.style.setProperty('--t-hero', (100 * target / w) + 'px');
+  if (!docked) hero.classList.remove('is-docked');
+  void heroWord.offsetWidth; $('#heroSlot').style.transition = '';
+}
+let heroIdx = 0, heroLast = 0;
+const statuses = ['thinking', 'building', 'waiting'];
+let st = 0; setInterval(() => { st = (st + 1) % 3; $('#statusText').textContent = statuses[st]; }, 1700);
+const MODES = ['Ask', 'Plan', 'Auto', 'Bypass'];
+function setMode(m) { const b = $('#modeBtn'); b.dataset.m = m; b.textContent = 'Mode: ' + m; const p = $('#pnMode'); p.textContent = m; p.classList.toggle('pill--red', m === 'Bypass'); }
+$('#modeBtn').addEventListener('click', () => setMode(MODES[(MODES.indexOf($('#modeBtn').dataset.m) + 1) % 4]));
+addEventListener('keydown', e => { if (e.key === 'Tab' && e.shiftKey && document.activeElement === $('#modeBtn')) { e.preventDefault(); $('#modeBtn').click(); } });
+
+/* ================= MARQUEE (auto + drag + inertia) ================= */
+const marq = $('#marq'), mTrack = $('#marqTrack');
+const itemHTML = AGENTS.map(([n, s]) => `<span class="marq__item">${n}<small>${s}</small></span>`).join('');
+mTrack.innerHTML = itemHTML + itemHTML + itemHTML;
+const mq = { x: 0, v: 0, drag: null, auto: -40 };
+marq.addEventListener('pointerdown', e => { mq.drag = { x: e.clientX, t: performance.now() }; marq.setPointerCapture(e.pointerId); document.documentElement.classList.add('is-dragging'); });
+marq.addEventListener('pointermove', e => { if (!mq.drag) return; const dx = e.clientX - mq.drag.x, now = performance.now(); mq.x += dx; mq.v = dx / Math.max(1, now - mq.drag.t) * 16; mq.drag.x = e.clientX; mq.drag.t = now; });
+const mEnd = () => { mq.drag = null; document.documentElement.classList.remove('is-dragging'); };
+marq.addEventListener('pointerup', mEnd); marq.addEventListener('pointercancel', mEnd);
+
+/* ================= PIXEL DISSOLVE (scrubbed) ================= */
+const pixSets = $$('.media .pix').map(p => {
+  p.innerHTML = '<i></i>'.repeat(100);
+  const cells = [...p.children].map((el, k) => {
+    const row = Math.floor(k / 25);                     // lower rows switch on first
+    return { el, th: (3 - row) * .22 + rnd() * .3, on: false };
+  });
+  return { sec: p.parentElement, cells };
+});
+
+/* ================= PANEL DEMO (feed plays when visible) ================= */
+const feed = $$('#pnFeed .msg'); let feedTimer = null;
+// one step every 650 ms: show the next message; after the last one hold ~5 s, clear, start again
+let feedI = 0, feedOn = false;
+function feedStep() {
+  if (!feedOn) return;
+  if (feedI < feed.length) feed[feedI].classList.add('on');
+  else if (feedI > feed.length + 7) { feed.forEach(m => m.classList.remove('on')); feedI = -1; }
+  feedI++;
+}
+if (!reduced) feedTimer = setInterval(feedStep, 650);
+new IntersectionObserver(es => es.forEach(e => feedOn = e.isIntersecting), { threshold: .15 }).observe($('#panel'));
+if (reduced) feed.forEach(m => m.classList.add('on'));
+
+/* ================= FUNCTIONS ACCORDION ================= */
+$$('#rows .rw').forEach(rw => rw.firstElementChild.addEventListener('click', () => {
+  const open = !rw.classList.contains('is-open');
+  rw.classList.toggle('is-open', open); rw.firstElementChild.setAttribute('aria-expanded', open);
+}));
+
+/* ================= DROPPING STACK ================= */
+const stack = $('#stack'), stackNum = $('#stackNum');
+const cards = ALSO.map(([t, p, art], i) => {
+  const el = document.createElement('article'); el.className = 'card';
+  el.innerHTML = `<canvas></canvas><div class="card__t"><b>${t}</b><p>${p}</p></div>`;
+  stack.insertBefore(el, stack.firstChild); return { el, art };
+});
+let order = cards.map((_, i) => i), stackBusy = false, shown = 0;
+const POS = [[0, 1], [-71, .74], [-114, .59], [-142, .49]];   // y offset (px at 1440) and scale, measured
+function layoutStack() {
+  const k = Math.min(1, vw / 1440) || 1;
+  order.forEach((ci, depth) => {
+    const c = cards[ci].el; const [y, s] = POS[Math.min(depth, 3)];
+    c.style.zIndex = 10 - depth;
+    c.style.opacity = depth > 3 ? 0 : 1;
+    c.style.filter = `brightness(${1 - Math.min(depth, 3) * .18})`;
+    c.style.transform = `translate(-50%,0) translateY(${y * k * (vw < 900 ? 1.4 : 1)}px) scale(${s})`;
+  });
+  stackNum.textContent = String(shown + 1).padStart(2, '0') + ' / ' + String(cards.length).padStart(2, '0');
+}
+function nextCard() {
+  if (stackBusy) return; stackBusy = true;
+  const top = cards[order[0]].el;
+  top.classList.add('is-drop');
+  top.style.transform = 'translate(-50%,0) translateY(70vh) rotate(9deg) scale(1)';
+  setTimeout(() => {
+    top.classList.remove('is-drop'); order.push(order.shift()); shown = (shown + 1) % cards.length;
+    top.style.transition = 'none'; layoutStack(); void top.offsetWidth; top.style.transition = '';
+    stackBusy = false;
+  }, reduced ? 0 : 650);
+  order.slice(1).forEach((ci, d) => { const c = cards[ci].el; const [y, s] = POS[Math.min(d, 3)]; const k = Math.min(1, vw / 1440); c.style.transform = `translate(-50%,0) translateY(${y * k * (vw < 900 ? 1.4 : 1)}px) scale(${s})`; c.style.opacity = d > 3 ? 0 : 1; c.style.filter = `brightness(${1 - Math.min(d, 3) * .18})`; });
+}
+stack.addEventListener('click', nextCard);
+stack.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nextCard(); } });
+stack.tabIndex = 0;
+
+/* ================= BEFORE / NOW (archive slider) ================= */
+const thumbs = $('#bnThumbs');
+thumbs.innerHTML = BEFORE.map(([t], i) => `<button type="button" role="tab" data-i="${i}">${String(i + 1).padStart(2, '0')} ${t}<i></i></button>`).join('');
+let bnI = -1, bnT0 = 0; const BN_DUR = 6000;
+function showBn(i) {
+  if (i === bnI) return;
+  const slide = $('#bnSlide'); slide.classList.add('is-out');
+  setTimeout(() => {
+    const [t, w, n] = BEFORE[i];
+    $('#bnTitle').textContent = t; $('#bnWas').textContent = w; $('#bnNow').textContent = n;
+    $('#bnNum').textContent = String(i + 1).padStart(2, '0');
+    slide.classList.remove('is-out');
+  }, bnI < 0 ? 0 : 300);
+  $$('button', thumbs).forEach((b, k) => { b.classList.toggle('is-active', k === i); b.setAttribute('aria-selected', k === i); b.querySelector('i').style.transform = 'scaleX(0)'; });
+  bnI = i; bnT0 = performance.now();
+}
+thumbs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) showBn(+b.dataset.i); });
+let bnHover = false; $('#before').addEventListener('mouseenter', () => bnHover = true); $('#before').addEventListener('mouseleave', () => { bnHover = false; bnT0 = performance.now() - bnProg * BN_DUR; });
+let bnProg = 0;
+showBn(0);
+
+/* ================= GET: thumbnails marquee ================= */
+const tt = $('#thumbsTrack');
+for (let i = 0; i < 16; i++) { const cv = document.createElement('canvas'); tt.appendChild(cv); }
+const thumbCvs = $$('canvas', tt);
+
+/* ================= CURSOR BUBBLE ================= */
+const cur = $('#cursor'), curLabel = cur.firstElementChild; let cx = -100, cy = -100, tx = -100, ty = -100;
+if (!touch) {
+  addEventListener('pointermove', e => { tx = e.clientX; ty = e.clientY; const h = e.target.closest('[data-cursor]'); cur.classList.toggle('is-on', !!h); if (h) curLabel.textContent = h.dataset.cursor; });
+}
+
+/* ================= MEASURE ================= */
+let L = {};
+function measure() {
+  vw = innerWidth; vh = innerHeight;
+  const top = el => el.getBoundingClientRect().top + scrollY;
+  L.pix = pixSets.map(s => ({ top: top(s.sec), h: s.sec.offsetHeight }));
+  L.st = { top: top($('#status')), h: $('#status').offsetHeight };
+  $$('canvas').forEach(cv => cv._art && sizeCanvas(cv));
+  fitHero(); layoutStack();
+}
+
+/* ================= LOOP ================= */
+let last = performance.now();
+function raf(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now; const t = now / 1000;
+  lenis && lenis.raf(now);
+  const y = scrollY;                     // Lenis drives native scroll, so scrollY is always current
+
+  // hero slot: cycle a new patch every 700 ms
+  if (now - heroLast > 700) { heroLast = now; heroIdx = (heroIdx + 1) % ART_KEYS.length; heroCv._art = ART_KEYS[heroIdx]; }
+  drawCanvas(heroCv, reduced ? 0 : t);
+
+  // live canvases
+  live.forEach(cv => cv !== heroCv && drawCanvas(cv, reduced ? 0 : t));
+
+  // marquee
+  if (!mq.drag) { mq.x += (reduced ? 0 : mq.auto) * dt + mq.v; mq.v *= .93; }
+  const w3 = mTrack.scrollWidth / 3 || 1; mq.x = ((mq.x % w3) - w3) % w3;
+  mTrack.style.transform = `translate3d(${mq.x}px,0,0)`;
+
+  // pixel dissolve: progress 0 when the section bottom is at the viewport bottom, 1 when it is at 25% from top
+  pixSets.forEach((s, i) => {
+    const m = L.pix[i]; const p = map(y + vh - (m.top + m.h), -vh * .05, vh * .75);
+    s.cells.forEach(c => { const on = p > c.th; if (on !== c.on) { c.on = on; c.el.classList.toggle('on', on); } });
+  });
+
+  // status number parallax
+  const sp = map(y + vh, L.st.top, L.st.top + L.st.h + vh);
+  $('#stNum').style.transform = `translate3d(0,${lerp(18, -6, sp)}%,0)`;
+
+  // before/now autoplay with progress bar
+  if (!bnHover && !reduced) bnProg = clamp((now - bnT0) / BN_DUR);
+  const bar = thumbs.children[bnI] && thumbs.children[bnI].querySelector('i'); if (bar) bar.style.transform = `scaleX(${bnProg})`;
+  if (bnProg >= 1) { bnProg = 0; showBn((bnI + 1) % BEFORE.length); }
+
+  // thumbs marquee in CTA
+  const tw = tt.scrollWidth / 2 || 1; tt._x = ((tt._x || 0) - (reduced ? 0 : 30 * dt)) % tw; tt.style.transform = `translate3d(${tt._x}px,0,0)`;
+
+  // cursor
+  cx = lerp(cx, tx, .25); cy = lerp(cy, ty, .25); cur.style.transform = `translate3d(${cx}px,${cy}px,0)`;
+
+  requestAnimationFrame(raf);
+}
+
+/* ================= BOOT ================= */
+register(heroCv, 'network');
+$$('[data-art]').forEach(sec => { const cv = sec.matches('canvas') ? sec : sec.querySelector('canvas'); register(cv, sec.dataset.art, .6); });
+cards.forEach(c => register(c.el.querySelector('canvas'), c.art, .7));
+// duplicate the CTA thumbs so the strip loops seamlessly
+const tKeys = ['grid', 'noise', 'network', 'feedback', 'scan', 'particles', 'grid', 'feedback'];
+thumbCvs.forEach((cv, i) => register(cv, tKeys[i % 8], .5));
+measure();
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(measure);
+addEventListener('load', measure);
+let rT; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(measure, 150); });
+requestAnimationFrame(raf);
+// intro: words rise, then the slot docks into the word, then nav drops in
+requestAnimationFrame(() => { hero.classList.add('is-in'); });
+setTimeout(() => hero.classList.add('is-docked'), reduced ? 0 : 900);
+setTimeout(() => $('#nav').classList.add('is-in'), reduced ? 0 : 1700);
+})();
+</script>
+</body>
+</html>

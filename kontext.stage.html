@@ -177,6 +177,23 @@ a { color: inherit; text-decoration: none; }
 .aud-why { color: var(--mid); font-size: 12px; font-style: italic; }
 @media (max-width:600px){ .aud-row{flex-direction:column;gap:3px} .aud-who{width:auto} }
 
+/* ─── PLUGIN (07) ────────────────────────────────────── */
+#plugin { padding: 4.5rem var(--mg) 5rem; border-bottom: 1px solid var(--dim); }
+.plug-headline { font-family: var(--f); font-weight: 400; font-size: clamp(2.4rem,6.5vw,7rem); line-height: 0.92; letter-spacing: -0.03em; color: var(--ink); margin: 1rem 0 1.6rem; text-align: left; }
+.plug-headline em { font-style: normal; color: var(--red); }
+.plug-body { font-size: 14px; line-height: 1.75; color: var(--mid); text-align: left; max-width: 640px; margin-bottom: 2rem; }
+.plug-body strong { color: var(--ink); font-weight: normal; }
+.plug-body code { font-family: var(--mono); font-size: 12.5px; color: var(--ink); background: rgba(237,235,230,0.08); padding: 1px 6px; border-radius: 2px; }
+.plug-cta-row { text-align: left; margin-bottom: 2.4rem; }
+.plug-cta { display: inline-flex; align-items: center; gap: 0.6rem; font-size: 13px; letter-spacing: 0.04em; color: var(--ink); border: 1px solid var(--ink); padding: 10px 20px; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
+.plug-cta:hover { background: var(--red); border-color: var(--red); color: var(--bg); }
+.plug-cta .plug-arrow { transition: transform 0.2s; }
+.plug-cta:hover .plug-arrow { transform: translate(2px,-2px); }
+.plug-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.2rem; text-align: left; max-width: 640px; padding-top: 1.4rem; border-top: 1px solid var(--dim); font-size: 11px; }
+.plug-stats .lbl { display: block; color: #333; margin-bottom: 4px; }
+.plug-stats .val { color: var(--ink); font-size: 13px; }
+@media (max-width:600px){ .plug-stats{grid-template-columns:1fr 1fr} .plug-headline{font-size:clamp(2rem,10vw,3.6rem)} }
+
 /* ─── CONTACT ────────────────────────────────────────── */
 #contact { padding: 3rem var(--mg); border-bottom: 1px solid var(--dim); }
 .ct-cmd { font-size: 12px; color: var(--mid); margin-bottom: 1.5rem; opacity: 0; }
@@ -258,6 +275,7 @@ footer { border-top: 1px solid var(--dim); padding: 0 var(--mg); height: 44px; d
     <a class="nav-center" href="index.html"><svg width="28" height="28" viewBox="0 0 1080 1080" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="kontext."><path d="M330.697 214.594L461.609 214.59L461.542 614.483C496.523 613.945 531.699 614.794 566.683 614.42C574.915 614.33 585.773 613.776 591.231 620.59C601.14 632.956 610.922 645.617 620.647 658.115L678.586 732.687L724.602 791.976C731.637 801.052 743.787 815.791 749.419 824.893L645.975 824.862L616.227 825.099C602.801 825.125 594.258 827.14 585.404 815.464L506.877 707.918C492.769 688.691 477.182 666.395 462.509 647.996L462.469 824.123C448.423 823.475 429.942 824.023 415.619 824.023L330.744 824.092C331.01 802.597 330.706 780.385 330.7 758.838L330.68 624.276L330.697 214.594Z" fill="currentColor"/><path d="M653.373 403.856C691.864 400.258 726.01 428.482 729.717 466.961C733.424 505.439 705.296 539.661 666.831 543.479C628.203 547.313 593.815 519.048 590.092 480.414C586.369 441.78 614.73 407.469 653.373 403.856Z" fill="currentColor"/></svg></a>
     <div class="nav-right">
       <a class="nav-link" href="#audience" data-i18n="nav.about">about</a>
+      <a class="nav-link" href="#plugin" data-i18n="nav.plugin">plugin</a>
       <a class="nav-link" href="#contact" data-i18n="nav.contact">contact</a>
       <button id="lang-toggle">RU</button>
     </div>
@@ -449,6 +467,31 @@ footer { border-top: 1px solid var(--dim); padding: 0 var(--mg); height: 44px; d
   </div>
 </section>
 
+<!-- PLUGIN -->
+<section id="plugin">
+  <div class="section-inner">
+    <span class="s-label rv" data-i18n="plugin.label">/* 07 — kontext.stage.plug */</span>
+    <h2 class="plug-headline rv">
+      <span class="hl-line"><span class="hl-inner" data-i18n="plugin.line1">A chat panel</span></span>
+      <span class="hl-line"><span class="hl-inner" data-i18n="plugin.line2">inside TouchDesigner.</span></span>
+    </h2>
+    <p class="plug-body rv" data-i18n="plugin.body">
+      <strong>kontext.stage.plug</strong> docks a chat panel inside TouchDesigner. Describe what you need — the agent (Claude Code, Codex, or an API model) builds the network, validates it, and saves the whole thing as one <code>.tox</code> for your team.
+    </p>
+    <div class="plug-cta-row rv">
+      <a href="stage/plug/" target="_blank" rel="noopener" class="plug-cta">
+        <span data-i18n="plugin.cta">open plugin site</span>
+        <span class="plug-arrow">↗</span>
+      </a>
+    </div>
+    <div class="plug-stats rv">
+      <div><span class="lbl">engine</span><span class="val">TouchDesigner</span></div>
+      <div><span class="lbl" data-i18n="plugin.stat2.lbl">surface</span><span class="val" data-i18n="plugin.stat2.val">docked chat panel</span></div>
+      <div><span class="lbl" data-i18n="plugin.stat3.lbl">output</span><span class="val">.tox</span></div>
+    </div>
+  </div>
+</section>
+
 <!-- CONTACT -->
 <section id="contact">
   <p class="ct-cmd rv"><span class="prompt">$</span> <span data-i18n="contact.cmd">contact --studio=kontext.stage</span></p>
@@ -499,6 +542,7 @@ const TRANSLATIONS = {
   en: {
     'nav.left': 'kontext.stage',
     'nav.about': 'about',
+    'nav.plugin': 'plugin',
     'nav.contact': 'contact',
     'hero.sub': '// live design &nbsp;·&nbsp; light &nbsp;·&nbsp; sound &nbsp;·&nbsp; generative graphics',
     'intro.label': '/* 01 — context */',
@@ -535,6 +579,14 @@ const TRANSLATIONS = {
     'aud.03.why': '// we design the room',
     'aud.04.who': 'brands',
     'aud.04.why': '// experiences &gt; ads',
+    'plugin.label': '/* 07 — kontext.stage.plug */',
+    'plugin.line1': 'A chat panel',
+    'plugin.line2': 'inside TouchDesigner.',
+    'plugin.body': '<strong>kontext.stage.plug</strong> docks a chat panel inside TouchDesigner. Describe what you need — the agent (Claude Code, Codex, or an API model) builds the network, validates it, and saves the whole thing as one <code>.tox</code> for your team.',
+    'plugin.cta': 'open plugin site',
+    'plugin.stat2.lbl': 'surface',
+    'plugin.stat2.val': 'docked chat panel',
+    'plugin.stat3.lbl': 'output',
     'contact.cmd': 'contact --studio=kontext.stage',
     'ct.ch1.head': 'channel: Instagram',
     'ct.ch2.head': 'channel: Telegram',
@@ -543,6 +595,7 @@ const TRANSLATIONS = {
   ru: {
     'nav.left': 'kontext.stage',
     'nav.about': 'о нас',
+    'nav.plugin': 'плагин',
     'nav.contact': 'контакт',
     'hero.sub': '// живой дизайн &nbsp;·&nbsp; свет &nbsp;·&nbsp; звук &nbsp;·&nbsp; генеративная графика',
     'intro.label': '/* 01 — контекст */',
@@ -579,6 +632,14 @@ const TRANSLATIONS = {
     'aud.03.why': '// мы проектируем комнату',
     'aud.04.who': 'бренды',
     'aud.04.why': '// опыт важнее рекламы',
+    'plugin.label': '/* 07 — kontext.stage.plug */',
+    'plugin.line1': 'Чат-панель',
+    'plugin.line2': 'внутри TouchDesigner.',
+    'plugin.body': '<strong>kontext.stage.plug</strong> встраивает чат-панель прямо в TouchDesigner. Опиши что нужно — агент (Claude Code, Codex или API-модель) соберёт сеть, проверит её и сохранит всё как один <code>.tox</code> для команды.',
+    'plugin.cta': 'открыть сайт плагина',
+    'plugin.stat2.lbl': 'интерфейс',
+    'plugin.stat2.val': 'чат-панель',
+    'plugin.stat3.lbl': 'результат',
     'contact.cmd': 'контакт --студия=kontext.stage',
     'ct.ch1.head': 'канал: Instagram',
     'ct.ch2.head': 'канал: Telegram',
@@ -689,6 +750,14 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 
 /* ─── CONTACT HEADLINE ───────────────────────────────── */
 document.querySelectorAll('#contact .hl-inner').forEach((el, i) => {
+  gsap.to(el, {
+    translateY: '0%', duration: 0.8, ease: 'power3.out', delay: i * 0.1,
+    scrollTrigger: { trigger: el, start: 'top 88%', once: true }
+  });
+});
+
+/* ─── PLUGIN HEADLINE ────────────────────────────────── */
+document.querySelectorAll('#plugin .hl-inner').forEach((el, i) => {
   gsap.to(el, {
     translateY: '0%', duration: 0.8, ease: 'power3.out', delay: i * 0.1,
     scrollTrigger: { trigger: el, start: 'top 88%', once: true }
